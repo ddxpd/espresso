@@ -1,0 +1,79 @@
+#!/usr/bin/python3
+import os
+import argparse
+import subprocess
+
+class RunSim:
+
+  def get_repo_dir(self):
+    a = subprocess.check_output("git rev-parse --show-toplevel", shell=True)
+    return a.decode("utf-8").strip("\n")
+  
+  def cmd_line_parser(self):
+    parser = argparse.ArgumentParser(prog="Espresso", description="Parse TestName, RunOption and CompileOption")
+    parser.add_argument('-t', '--test', action='store')
+    parser.add_argument('-b', '--build', action='store')
+    parser.add_argument('-r', '--run', action='store')
+    args = parser.parse_args()
+    if args.test == None:
+      print("Missing Test Name")
+      exit()
+    if args.build == None:
+      args.build = ""
+    if args.run == None:
+      args.run = ""
+    return (args.test, args.build, args.run)
+
+  def print_info(self):
+    print('repo: {}, filelist: {}, testname: {}, compile: {}, run:{}'.format(self.repo_dir, self.filelist, self.test, self.build, self.run))
+
+  def get_info(self):
+    self.repo_dir = self.get_repo_dir()
+    self.filelist = os.path.join(sim.repo_dir, "filelist")
+    (self.test, self.build, self.run) = self.cmd_line_parser()
+    self.print_info()
+
+  def run_vlib_vmap(self):
+    #print(self.vlib_vmap)
+    os.system(self.vlib_vmap)
+
+  def run_vlog(self):
+    f = open(self.filelist, "r")
+    fl = ""
+    for l in f.readlines():
+      file_name = os.path.join(self.repo_dir, l.strip(" \n"))
+      fl = fl + file_name + "\\\n    "
+    f.close()
+    fl = fl.strip("\\\n")
+    cmd = self.vlog_template.replace("__FILELIST__", fl)
+    os.system(cmd)
+    #print(cmd)
+
+  def run_vsim(self):
+    cmd = self.vsim_tempalte.replace("__TESTNAME__", self.test).replace("__BUILD__", self.build).replace("__RUN__", self.run)
+    os.system(cmd)
+    #print(cmd)
+
+  def __init__(self):
+    self.repo_dir       = ""
+    self.filelist       = ""
+    self.test           = ""
+    self.build          = ""
+    self.run            = ""
+    self.vlib_vmap      = """file delete -force work
+vlib work 
+vmap work work"""
+    self.vlog_template  ="""vlog +incdir+$UVM_HOME/src\\
+    -L mtiAvm\\
+    -L mtiOvm\\
+    -L mtiUvm\\
+    -L mtiUPF\\
+    -timescale=1ns/1ps\\
+    __FILELIST__"""
+    self.vsim_tempalte = 'vsim -c work.top +UVM_TESTNAME=__TESTNAME__ __BUILD__ __RUN__ -do "run -all; q"'
+
+sim = RunSim()
+sim.get_info()
+sim.run_vlib_vmap()
+sim.run_vlog()
+sim.run_vsim()
