@@ -1,3 +1,5 @@
 modelsim.ini
 transcript
 work
+*.swp
+*.log

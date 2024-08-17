@@ -46,12 +46,21 @@ class RunSim:
     f.close()
     fl = fl.strip("\\\n")
     cmd = self.vlog_template.replace("__FILELIST__", fl)
-    os.system(cmd)
+    os.system("{} |tee compile.log".format(cmd))
     #print(cmd)
+    f = open('compile.log', 'r')
+    num = ""
+    for l in f.readlines():
+      if l.startswith("Errors: "):
+        num = l.split("Errors: ")[-1].split(",")[0]
+        if num != "0":
+          print("There are {} compile errors. Exiting...".format(num))
+          exit()
+    f.close()
 
   def run_vsim(self):
     cmd = self.vsim_tempalte.replace("__TESTNAME__", self.test).replace("__BUILD__", self.build).replace("__RUN__", self.run)
-    os.system(cmd)
+    os.system("{} |tee sim.log".format(cmd))
     #print(cmd)
 
   def __init__(self):
