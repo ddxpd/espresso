@@ -24,6 +24,7 @@ class ParseTableFromPDF():
       self.column_per_row = 0
     else:
       self.csv_write_mode = "a"
+      self.table_rows = []
 
   def table_row_to_csv_line(self, row):
     s = "" 
@@ -64,8 +65,7 @@ class ParseTableFromPDF():
 
     csv_file_name = self.table_name + ".csv"
     fname = os.path.join(self.csv_folder, csv_file_name)
-    self.csv_fname = fname
-    f = open(self.csv_fname, self.csv_write_mode)
+    f = open(fname, self.csv_write_mode)
     if self.csv_write_mode == "w":
       s = self.table_row_to_csv_line(self.table_head)
       f.writelines(s)
@@ -74,7 +74,6 @@ class ParseTableFromPDF():
       f.writelines(s)
     f.close()
     print ("CSV file output at {}".format(fname))
-    self.table_rows = []
 
 
   def extract_table(self):
@@ -95,7 +94,6 @@ class ParseTableFromPDF():
     if not os.path.isfile(fpath):
       self.print_error("{} does not exist. Please check file path.".format(fpath))
     self.csv_folder = "../doc/csv"
-    self.csv_fname = ""
     self.pages = fitz.open(fpath)
     self.pages_to_detect = [74, 75, 76, 77]
     self.current_page = 0
