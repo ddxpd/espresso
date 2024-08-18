@@ -80,15 +80,36 @@ class ParseTableFromPDF():
     for page in self.pages:
       self.current_page += 1
       if self.current_page in self.pages_to_detect:
+        titles = []
+        table_pos_dict = {}
         tbl = page.find_tables()
         if len(tbl.tables) != 0:
           print("Find table on page {}".format(self.current_page))
           txt = page.get_text("text")
+          tbl_cnt = 1
+          title_pos_dict = {}
           for line in txt.split("\n"):
             if line.strip(" \n").startswith("Figure "):
-              self.update_table_name(line)
+              titles.append(line)
+              rect = page.search_for(line)
+              title_pos_dict[rect[0][1]] = tbl_cnt
+              tbl_cnt += 1
           for obj in tbl.tables:
-            self.process_table(obj.extract())
+            a = obj.bbox[1]
+            check_done = 0
+            for pos in title_pos_dict.keys():
+              if check_done == 0 and pos < a:
+                v = title_pos_dict[pos]
+                if v not in table_pos_dict.keys():
+                  table_pos_dict[v] = obj
+                  check_done = 1
+
+        if len(titles) != len(table_pos_dict.keys()):
+          self.print_error("Table Count Mismatch! {} Title != {} Table".format(len(titles), len(table_pos_dict.keys())))
+        else:
+          for i in range(0, len(titles)):
+            self.update_table_name(titles[i])
+            self.process_table(table_pos_dict[i+1].extract())
 
   def __init__(self, fpath):
     if not os.path.isfile(fpath):
