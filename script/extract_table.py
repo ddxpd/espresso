@@ -12,6 +12,10 @@ class ParseTableFromPDF():
     print("Warning: " + line)
 
   def update_table_name(self, line):
+    #Extract table name from line
+    #Figure format - Figure xx: xxxxxx
+    #If it is a new table, create a new file.
+    #Otherwise add lines in the existed files. 
     table_name = line.strip(" \n").split(":")[-1].strip("' ").replace(" ", "_").replace("–", "_")
     start_new_table = 0
     if (table_name != self.table_name):
@@ -26,6 +30,7 @@ class ParseTableFromPDF():
       self.csv_write_mode = "a"
       self.table_rows = []
 
+  #Convert row of table to string
   def table_row_to_csv_line(self, row):
     s = "" 
     for col in row:
@@ -34,13 +39,17 @@ class ParseTableFromPDF():
     s = s.strip(", ")+"\n"
     return s
 
+  #rows: all the rows in this table
   def process_table(self, rows):
     table_head = []
+    #row[0] is the head of the table, count only if col is not None
     for col in rows[0]:
       if col != "" and col != None:
         table_head.append(col)
+    #Report warning if the table exists and the column count of the head does not match the previous one.
     if self.head_column_cnt != 0 and self.head_column_cnt != len(table_head):
         self.print_warning("{} head column cnt - previous: {}, current: {}".format(self.table_name, self.head_column_cnt, len(table_head)))
+    #Update column count of table head and rows
     else:
       self.table_head = table_head
       self.head_column_cnt = len(table_head)
@@ -53,9 +62,12 @@ class ParseTableFromPDF():
       for col in row:
         col_cnt += 1
         if col != None:
+          #Description format - xxx: xxxxxxxx Extract the left part
           if ":" in col and col_cnt != 1:
             col = col.split(":")[0]
+          #table content is per row of the table
           table_content.append(col)
+      #report warning if the column of each row does not match the initial setting
       if self.column_per_row != len(table_content):
           self.print_warning("{} row {} content column cnt - previous: {}, current: {}".format(self.table_name, (i+1), self.column_per_row, len(table_content)))
           s = self.table_row_to_csv_line(table_content)
@@ -64,6 +76,7 @@ class ParseTableFromPDF():
         if table_content[0] != "":
           self.table_rows.append(table_content)
 
+    #generate csv file
     csv_file_name = self.table_name + ".csv"
     fname = os.path.join(self.csv_folder, csv_file_name)
     f = open(fname, self.csv_write_mode)
@@ -90,37 +103,45 @@ class ParseTableFromPDF():
     self.get_page()
     for page in self.pages:
       self.current_page += 1
+      #Only check the pages to be detected --> self.pages_to_detect
       if self.current_page in self.pages_to_detect:
+        #titles -> table name extracted from Figure xxx
         titles = []
-        table_pos_dict = {}
+        #table_dict - key: table count (int), value: table object
+        table_dict = {}
+        #Search for tables. List of tables.
         tbl = page.find_tables()
         if len(tbl.tables) != 0:
           print("Find table on page {}".format(self.current_page))
           txt = page.get_text("text")
           tbl_cnt = 1
+          #title_pos_dict -- key: vertical position of the table title, value: table count
           title_pos_dict = {}
           for line in txt.split("\n"):
+            #Count number of table title in the page. Record the vertical position of it.
             if line.strip(" \n").startswith("Figure ") and ":" in line:
               titles.append(line)
               rect = page.search_for(line)
               title_pos_dict[rect[0][1]] = tbl_cnt
               tbl_cnt += 1
+          #Since there are sub-tables embedded in tables, filter the subtitle by following procedures.
+          #If there are multiple tables, check the vertical position of the table vs table title. 
           for obj in tbl.tables:
             a = obj.bbox[1]
             check_done = 0
             for pos in title_pos_dict.keys():
               if check_done == 0 and pos < a:
                 v = title_pos_dict[pos]
-                if v not in table_pos_dict.keys():
-                  table_pos_dict[v] = obj
+                if v not in table_dict.keys():
+                  table_dict[v] = obj
                   check_done = 1
 
-        if len(titles) != len(table_pos_dict.keys()):
-          self.print_error("Table Count Mismatch! {} Title != {} Table".format(len(titles), len(table_pos_dict.keys())))
+        if len(titles) != len(table_dict.keys()):
+          self.print_error("Table Count Mismatch! {} Title != {} Table".format(len(titles), len(table_dict.keys())))
         else:
           for i in range(0, len(titles)):
             self.update_table_name(titles[i])
-            self.process_table(table_pos_dict[i+1].extract())
+            self.process_table(table_dict[i+1].extract())
 
   def __init__(self, fpath):
     if not os.path.isfile(fpath):
