@@ -16,7 +16,7 @@ class ParseTableFromPDF():
     #Figure format - Figure xx: xxxxxx
     #If it is a new table, create a new file.
     #Otherwise add lines in the existed files. 
-    table_name = line.strip(" \n").split(":")[-1].strip("' ").replace(" ", "_").replace("–", "_")
+    table_name = line.strip(" \n").split(":")[-1].strip("' ").replace(" ", "_").replace("–", "_").replace(",","_").replace("/", "")
     start_new_table = 0
     if (table_name != self.table_name):
       self.table_name = table_name
@@ -148,7 +148,7 @@ class ParseTableFromPDF():
       self.print_error("{} does not exist. Please check file path.".format(fpath))
     self.csv_folder = "../doc/csv"
     self.pages = fitz.open(fpath)
-    self.page_ranges = [[74, 96], [155, 158]]
+    self.page_ranges = [[74, 96], [155, 158], [321, 350]]
     self.pages_to_detect = []
     self.current_page = 0
     #self.pages_to_detect = [74]
