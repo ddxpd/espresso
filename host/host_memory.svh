@@ -7,8 +7,6 @@ class host_memory;
   extern function void fill_data_by_byte(bit[63:0] addr, bit[7:0] data);
   extern function void fill_data_by_dw(bit[63:0] addr, bit[31:0] data);
   extern function void malloc_space(int size, ref bit[63:0] addr);
-
-  
 endclass
 
 

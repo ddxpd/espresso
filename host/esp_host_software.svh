@@ -1,19 +1,20 @@
-parameter  NUM_DW_SQE = 16;
+
 
 class esp_host extends uvm_object;
   `uvm_object_utils(esp_host)
 
   host_memory    host_mem;
   nvme_dut       DUT;
-  cmd_entry      cmd_waiting_q[$];
+  nvme_cmd       cmd_waiting_q[$];
+
 
   extern function new(string name="esp_host"); 
-  extern task post_cmd(cmd_entry cmd);
+  extern task post_cmd(nvme_cmd cmd);
 
 endclass
 
 
-task esp_host::post_cmd(cmd_entry cmd);
+task esp_host::post_cmd(nvme_cmd cmd);
   //bit[7:0]    ;   
   bit        is_admin;
 
@@ -64,8 +65,8 @@ function esp_host::calculate_cmd_size();
 endfunction
 
 
-function esp_host::malloc_memory_space(cmd_entry cmd);
-  bit[63:0] addr;
+function esp_host::malloc_memory_space(nvme_cmd cmd);
+  bit[HOST_AXI_WIDTH-1:0] addr;
   malloc_space(cmd.cmd_size, addr);
   cmd.SQE_DW[6] = addr[31:0];
   cmd.SQE_DW[7] = addr[63:32];
@@ -74,7 +75,7 @@ endfunction
 
 
 function esp_host::fill_data_to_host_mem(cmd);
-  bit[63:0] addr;
+  bit[HOST_AXI_WIDTH-1:0] addr;
   bit       size;
 
   size = cmd.data.size();
@@ -86,7 +87,7 @@ endfunction
 
 
 function esp_host::fill_cmd_to_SQ(cmd);
-  bit[63:0] addr;
+  bit[HOST_AXI_WIDTH-1:0] addr;
   bit       size;
 
   addr = get_cmd_positon();
@@ -95,7 +96,7 @@ endfunction
 
 
 
-task esp_host::ring_doorbell(cmd_entry cmd, nvme_mgr mgr);
+task esp_host::ring_doorbell(nvme_cmd cmd, nvme_function_manager mgr);
  
   int sq_id;
   int sq_tail;
@@ -107,17 +108,16 @@ endtask
 
 
 
-task esp_host::forever_monitor_intr();
+task esp_host::forever_monitor_interrupt();
   forever begin
     if()
-    get_cq_tail();
+    //got the corresponding IV
+    
+    get_cq_tail(); //TODO check the phase bit in CQE
     if(cq_tail != cq_head)begin
       get_cqe(nvme_cpl);
     end   
   end
- 
-
-    
 endtask
 
 
