@@ -1,0 +1,80 @@
+#!/usr/bin/python3
+import os
+import argparse
+import string
+
+class CSV_TO_STRUCT:
+
+  def csv2struct(self):
+    for root, dirs, files in os.walk(self.csv_dir):
+      for file in files:
+        if file.endswith(".csv"):
+          self.csv_fname = file
+          self.get_csv_info()
+
+  def gen_code(self):
+    rsv_cnt = 0
+    template = "  bit [msb:lsb] fields; //comments\n"
+    if "___" in self.csv_fname:
+      s_name = "S_" + self.csv_fname.split("_")[0].upper()
+    else:
+      s_name = "S_" + self.csv_fname.split(".csv")[0].upper()
+    s = "typedef struct packed {\n"
+    for csv_info in self.csv_info_lst:
+      if ":" in csv_info["Bits"]:
+        (msb, lsb) = csv_info["Bits"].split(":")
+      else:
+        msb = csv_info["Bits"]
+        lsb = csv_info["Bits"]
+      if "(" in csv_info["Description"]:
+        (comments, fields) = csv_info["Description"].strip(")\n").split("(")
+      else:
+        fields = csv_info["Description"].strip(" \n")
+        if fields == "Reserved":
+          fields = "RSVD"+str(rsv_cnt)
+        comments = ""
+        rsv_cnt += 1
+      s += template.replace("msb", msb).replace("lsb", lsb).replace("fields", fields).replace("comments", comments)
+    s += "} " + s_name + ";\n\n\n"
+
+    fw = open(self.struct_lib, self.write_mode)
+    fw.writelines(s)
+    fw.close()
+    self.write_mode = "a"
+
+  def get_csv_info(self):
+    fr = open(os.path.join(self.csv_dir, self.csv_fname), 'r')
+    keys = []
+    self.csv_info_lst = []
+    if_gen = 0
+    for line in fr.readlines():
+      if not line.startswith("//"):
+        if line.startswith("Bits"):
+          keys = line.strip("\n").split(",")
+          if keys[0].strip(" ") != "Bits" or keys[-1].strip(" ") != "Description":
+            print("1) {} does not have Bits or Description column".format(self.csv_fname))
+            break
+        else:
+          if len(keys) == 0:
+            print("2) {} does not have Bits or Description column".format(self.csv_fname))
+            break
+          else:
+            values = line.split(",")
+            csv_info = {}
+            csv_info[keys[0].strip(" ")]  = values[0]
+            csv_info[keys[-1].strip(" ")] = values[-1]
+            self.csv_info_lst.append(csv_info)
+            if_gen = 1
+    fr.close()
+    if if_gen == 1:
+      self.gen_code()
+
+  def __init__(self):
+    self.csv_dir      = "../doc/csv"
+    self.csv_fname    = ""
+    self.struct_lib   = "../lib/nvme_struct_lib.sv"
+    self.write_mode   = "w"
+    self.csv_info_lst = []
+
+a = CSV_TO_STRUCT()
+a.csv2struct()
