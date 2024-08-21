@@ -1,9 +1,10 @@
 class nvme_cmd extends uvm_object;
   `uvm_object_utils(nvme_cmd)
 
-       bit [31:0]     SQE_DW[NUM_DW_SQE];
-  rand bit [7:0]      opc;
-       bit [7:0]      data[];
+       U32     SQE_DW[NUM_DW_SQE];
+  rand U8      opc;
+       U8      data[];
+       int     data_size;
 
   extern function new(string name="nvme_cmd");
   extern function void create_data(int size, string dp = "INCR");
