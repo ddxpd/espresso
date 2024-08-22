@@ -109,6 +109,7 @@ class ParseTableFromPDF():
         titles = []
         #table_dict - key: table count (int), value: table object
         table_dict = {}
+        sub_tbl_dict = {}
         #Search for tables. List of tables.
         tbl = page.find_tables()
         if len(tbl.tables) != 0:
@@ -135,6 +136,10 @@ class ParseTableFromPDF():
                 if v not in table_dict.keys():
                   table_dict[v] = obj
                   check_done = 1
+                else:
+                  if v not in sub_tbl_dict.keys():
+                    sub_tbl_dict[v] = []
+                  sub_tbl_dict[v].append(obj)
 
         if len(titles) != len(table_dict.keys()):
           self.print_error("Table Count Mismatch! {} Title != {} Table".format(len(titles), len(table_dict.keys())))
@@ -142,12 +147,23 @@ class ParseTableFromPDF():
           for i in range(0, len(titles)):
             self.update_table_name(titles[i])
             self.process_table(table_dict[i+1].extract())
+          for v in sub_tbl_dict.keys():
+            sub_tbl_cnt = 0
+            for obj in sub_tbl_dict[v]:
+              if (sub_tbl_cnt == 0):
+                self.csv_write_mode = "w"
+              else:
+                self.csv_write_mode = "a"
+              self.update_table_name("{}_sub_tbl{}".format(titles[v-1], sub_tbl_cnt))
+              self.process_table(obj.extract())
+              sub_tbl_cnt += 1
 
   def __init__(self, fpath):
     if not os.path.isfile(fpath):
       self.print_error("{} does not exist. Please check file path.".format(fpath))
     self.csv_folder = "../doc/csv"
     self.pages = fitz.open(fpath)
+    #self.page_ranges = [[74, 96], [155, 158], [321, 350]]
     self.page_ranges = [[74, 96], [155, 158], [321, 350]]
     self.pages_to_detect = []
     self.current_page = 0
