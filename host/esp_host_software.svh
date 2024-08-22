@@ -81,6 +81,13 @@ task esp_host::post_cmd(nvme_cmd cmd);
     ring_doorbell(cmd, mgr);
     //cmd_waiting_q.push_back(cmd);
   end
+
+
+  //Create SQ
+  if(is_admin == 1 && cmd.SQE_DW[0][7:0] == 'h01)begin  
+    int nsid = cmd.SQE_DW[1];
+    int nlb  = cmd.SQE_DW[12][15:0];
+  end
     
 endtask
 

@@ -1,13 +1,16 @@
 class base_q extends uvm_object;
   `uvm_object_utils(base_q)
 
-        int qid;
-        bit [31:0] base_addr;
-	int entry_size;
-        int num_entries;
+        int     qid;
+        U32     base_addr;
+	int     entry_size;
+        int     num_entries;
 
-  local int tail_ptr;
-  local int head_ptr;
+  local U16     tail_ptr;
+  local U16     head_ptr;
+   
+        bit     is_creating;
+        bit     is_deleting;
 
   /*
   extern function new (string name = "");
@@ -35,6 +38,9 @@ class base_q extends uvm_object;
 endclass
 
 class sq extends base_q;
+  
+        int cqid; 
+
   `uvm_object_utils(sq)
 
   //extern function new (string name = "");
