@@ -1,3 +1,7 @@
+misc/nvme_macros.svh
+misc/misc_pkg.sv
+bfm/host_if.svh
+bfm/bfm_pkg.sv
 host/host_pkg.sv
 test/test_pkg.sv
 top.sv

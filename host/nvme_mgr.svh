@@ -1,12 +1,13 @@
 class nvme_function_manager extends uvm_object;
 
-  `uvm_object_utils(nvme_function_manager)
+  `uvm_object_utils_begin(nvme_function_manager)
+  `uvm_object_utils_end
 
   extern function new(string name="nvme_function_manager");
 
 endclass
 
 
-function void nvme_function_manager::new();
+function nvme_function_manager::new(string name="nvme_function_manager");
   super.new(name);
 endfunction

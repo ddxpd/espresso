@@ -20,7 +20,7 @@ class nvme_dut extends uvm_component;
 
 
   
-  extern function void   new(string name="nvme_dut");
+  extern function void   new(string name="nvme_dut", uvm_component parent);
   extern task            forever_monitor_doorbell();
   extern task            forever_handle_cmd();
   extern function void   set_sq_tail(int ta);
@@ -37,8 +37,8 @@ endclass
 
 
 
-function nvme_dut::new(string name="nvme_dut");
-  super.new(name);
+function nvme_dut::new(string name="nvme_dut", uvm_component parent);
+  super.new(name, parent);
 endfunction
 
 

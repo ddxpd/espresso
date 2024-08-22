@@ -33,6 +33,13 @@ class esp_host extends uvm_object;
 endclass
 
 
+
+function esp_host::new(string name="esp_host");
+  super.new(name);
+endfunction
+
+
+
 task esp_host::post_cmd(nvme_cmd cmd);
   bit        is_admin;
 
@@ -141,6 +148,7 @@ endtask
 
 task esp_host::forever_monitor_interrupt();
   nvme_cpl_entry   nvme_cpl;
+  bit              suc;
   forever begin
     wait(host_vif.msix_intr_happens == 1);
 

@@ -1,5 +1,6 @@
-interface host_intf();
-
+interface host_intf;
+//  input bit clk
+//);
 
   host_memory  host_mem;
   bit          msix_intr_happens;
@@ -8,10 +9,10 @@ interface host_intf();
 
   function clear_msix_intr();
     msix_intr_happens = 0; 
-  endtask 
+  endfunction 
 
   
-  function void host_memory::fill_byte_data_direct(U64 addr, U8 data);
+  function void fill_byte_data_direct(U64 addr, U8 data);
     host_mem.fill_byte_data_direct(addr, data);
   endfunction
 
