@@ -17,6 +17,12 @@ enum U8 {
 } IO_OPC_E
 
 
+enum bit[1:0] {
+  NVME_PRP       = 'h0,
+  NVME_SGL0      = 'h1,  // MPTR is not SGL
+  NVME_SGL1      = 'h2   // MPTR is also SGL
+} PSDT_E
+
 
 enum U8 {
   CMD_DONE        = 'h1,

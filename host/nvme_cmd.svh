@@ -14,11 +14,17 @@ class nvme_cmd extends uvm_object;
   rand U32         nsid;
        U128        dptr;
        U64         mptr;
+       U64         slba;
   rand U16         nlb; 
+       PSDT_E      psdt;   
 
 
        U8          data[];
-       int         data_size;
+       int         host_tdata_size;
+       int         ctrler_tdata_size;
+       int         udata_size;    //Only used by IO cmd
+       int         mdata_size;    //Only used by IO cmd
+       bit         is_admin;
 
   
   //-----------------------------------------------
@@ -37,23 +43,20 @@ class nvme_cmd extends uvm_object;
   //             CONSTRAINT
   //-----------------------------------------------
   constraint c_sqid {
-    
+    //contraint by mgr
   }
 
   constraint c_cqid {
-    
+    //contraint by mgr
   }
 
-  constraint c_cid {
-    
-  }
 
   constraint c_nsid {
-    
+    //contraint by mgr
   }
   
   constraint c_nlb {
-    
+    //contraint by mgr
   }
 
   //constraint c_ {
@@ -75,10 +78,13 @@ class nvme_cmd extends uvm_object;
 
        
 
-  extern function new(string name="nvme_cmd");
-  extern function void create_data(int size, string dp = "INCR");
-  extern function void pre_randomize();
-  extern function void post_randomize();
+  extern function             new(string name="nvme_cmd");
+  extern function void        create_data(int size, string dp = "INCR");
+  extern function void        pre_randomize();
+  extern function void        post_randomize();
+  extern function void        process_self_stage_0();
+  extern function bit         is_admin();
+  extern function void        calculate_data_size();
 
 
   
@@ -87,11 +93,14 @@ class nvme_cmd extends uvm_object;
 endclass
 
 
-function void nvme_cmd::create_data(int size, string dp = "INCR");
-  data = new[size];
+
+// dp: data pattern
+function void nvme_cmd::create_data(string dp = "INCR", );
+
+  data = new[host_tdata_size];
   case(dp)
     "INCR":begin
-	     for(int i = 0; i < size; i++)
+	     for(int i = 0; i < host_tdata_size; i++)
                data[i] = i; 
            end
   endcase
@@ -114,4 +123,41 @@ endfunction
 
 
 function void nvme_cmd::post_randomize();
+endfunction
+
+
+
+function void nvme_cmd::process_self_stage_0();
+  if(sqid == 0)
+    is_admin = 1;
+  else 
+    is_admin = 0;
+
+  calculate_data_size();
+
+endfunction
+
+
+
+function void nvme_cmd::is_admin();
+  return is_admin;
+endfunction
+
+
+
+function PSDT_E nvme_cmd::get_psdt();
+  return psdt;
+endfunction
+
+
+
+function void nvme_cmd::calculate_data_size();
+  int lba_size, meta_size;//TODO 
+  bit is_meta_stripe; // is get from mgr.ns[]
+
+
+  udata_size        = nlb * lba_size;  //lba_size is get from mgr.ns[]  //TODO    
+  mdata_size        = nlb * meta_size; //meta_size is get from mgr.ns[]  //TODO    
+  host_tdata_size   = host_udata_size + host_mdata_size;
+  ctrler_tdata_size = host_udata_size + host_mdata_size /* +... */;
 endfunction

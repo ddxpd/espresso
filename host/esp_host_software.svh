@@ -2,6 +2,7 @@ class esp_host extends uvm_object;
   `uvm_object_utils(esp_host)
 
   host_memory    host_mem;
+  //host_memory_manager   host_mem_mgr;
   nvme_dut       DUT;
   nvme_cmd       cmd_waiting_q[$];
   host_intf      host_vif;
@@ -43,34 +44,25 @@ endfunction
 task esp_host::post_cmd(nvme_cmd cmd);
   bit        is_admin;
 
+  //SQE_DW is not packed yet
+  cmd.process_self_stage_0();
   //check which Q the cmd belongs to
-  if(cmd.sqid == 0)begin
-    is_admin = 1;
-  end
-  else begin
-    is_admin = 0;
-  end
 
  
 
-  if(is_admin == 0 && cmd.SQE_DW[0][7:0] == 'h01)begin
+  if(!cmd.is_admin() && cmd.opc == NVME_WRITE)begin
     int nsid = cmd.SQE_DW[1];
     int nlb  = cmd.SQE_DW[12][15:0];
-    int data_size;
     //calculate the cmd size
     //...
-    //calculate_cmd_size();
-    data_size = nlb * nlb_size;
-    cmd.data_size = 64;
+    
+    cmd.host_tdata_size = 64;
+    cmd.create_data();
     //host assign the host memory space to the data and return DSPT
     malloc_memory_space(cmd);
     //malloc host memory for PRP List
     //fill PRP List or SGL DSPT to host memory
 
-           
-
-    //create data for cmd
-    cmd.create_data(data_size); 
     //fill data to host mem
     fill_data_to_host_mem(cmd); 
     
@@ -84,7 +76,7 @@ task esp_host::post_cmd(nvme_cmd cmd);
 
 
   //Create SQ
-  if(is_admin == 1 && cmd.SQE_DW[0][7:0] == 'h01)begin  
+  if( cmd.is_admin() && cmd.SQE_DW[0][7:0] == 'h01)begin  
     int nsid = cmd.SQE_DW[1];
     int nlb  = cmd.SQE_DW[12][15:0];
   end
@@ -101,10 +93,22 @@ endfunction
 function esp_host::malloc_memory_space(nvme_cmd cmd);
   bit[HOST_AXI_WIDTH-1:0] addr;
   //malloc_space(cmd.data_size, addr);
+  //temp assign
   addr = 'h8000_0000;
   cmd.SQE_DW[6] = addr[31:0];
   cmd.SQE_DW[7] = addr[63:32];
   //PRP and SGL
+  
+  if(cmd.get_psdt() == NVME_PRP)begin
+    
+
+  end
+  else begin
+
+  end
+
+     
+  //End of PRP and SGL
 endfunction
 
 
