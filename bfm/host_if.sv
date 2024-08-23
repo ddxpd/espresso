@@ -1,6 +1,8 @@
-interface host_intf;
+interface host_intf();
 //  input bit clk
 //);
+  import misc_pkg::*;
+  import host_mem_pkg::*;
 
   host_memory  host_mem;
   bit          msix_intr_happens;
@@ -27,7 +29,7 @@ interface host_intf;
   
   
   function void fill_dw_data_group_direct(U64 addr, const ref U32 data[$]);
-    host_mem.(addr, data);
+    host_mem.fill_dw_data_group_direct(addr, data);
   endfunction
   
   

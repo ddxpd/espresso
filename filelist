@@ -1,4 +1,6 @@
 misc/misc_pkg.sv
+mem/host_mem_pkg.sv
+bfm/host_if.sv
 bfm/bfm_pkg.sv
 host/host_pkg.sv
 test/test_pkg.sv

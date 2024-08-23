@@ -1,4 +1,4 @@
 package bfm_pkg;
   import misc_pkg::*;
-  `include "host_if.svh"
+  typedef virtual host_intf host_vif;
 endpackage
