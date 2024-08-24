@@ -16,20 +16,20 @@ class nvme_dut extends uvm_component;
 
           nvme_cmd       cmd_q[$];
 
-  virtual host_intf      host_vif;
+          host_vif       hvif;
 
 
   
-  extern function void   new(string name="nvme_dut", uvm_component parent);
+  extern function        new(string name="nvme_dut", uvm_component parent);
   extern task            forever_monitor_doorbell();
   extern task            forever_handle_cmd();
-  extern function void   set_sq_tail(int ta);
+  extern function        set_sq_tail(int ta);
   extern task            read_sqe(ref U32 DW[]);
   extern task            cmd_handle(nvme_cmd cmd);
   extern task            read_data(U64 addr, ref U8 data[]);
-  extern function void   print_data(const ref U8 data[]);
+  extern function        print_data(ref U8 data[]);
   extern task            send_cqe(nvme_cmd cmd);
-  extern task            send_MSIX_intr(nvme_cmd cmd);
+  extern task            send_MSIX_intr();
 
 
 
@@ -46,7 +46,7 @@ endfunction
 task nvme_dut::forever_monitor_doorbell();
   forever begin
     if(sq_head != sq_tail)begin
-      U32   SQE[16];
+      U32   SQE[];
       nvme_cmd   cmd;
       cmd = nvme_cmd::type_id::create("cmd", this);
       //read SQ Entry
@@ -65,7 +65,7 @@ endtask
 task nvme_dut::forever_handle_cmd();
   forever begin
     wait(cmd_q.size() > 0);
-    cmd_handle(cmd_q.pop_front())
+    cmd_handle(cmd_q.pop_front());
   end
 endtask
 
@@ -79,7 +79,7 @@ endfunction
 
 task nvme_dut::read_sqe(ref U32 DW[]);
   U64  cur_addr = sq_base_addr + cur_sq_head;
-  host_mem.take_data_group_by_dw(cur_addr, DW);
+  //host_mem.take_data_group_by_dw(cur_addr, DW);
   cur_sq_head++; //TODO
 endtask
 
@@ -103,13 +103,13 @@ endtask
 
 
 
-task nvme_dut::read_data(U64 addr, ref U8 data);
-  host_vif.fill_dw_data_group_direct(addr, data); 
+task nvme_dut::read_data(U64 addr, ref U8 data[]);
+  hvif.fill_dw_data_group_direct(addr, data); 
 endtask
 
 
 
-function nvme_dut::print_data(const ref U8 data);
+function nvme_dut::print_data(ref U8 data[]);
   int size = data.size();
   foreach(data[i])
     `uvm_info(get_name(), $sformatf("data[%0d] = %0h", i, data[i]), UVM_NONE)
@@ -130,16 +130,16 @@ task nvme_dut::send_cqe(nvme_cmd cmd);
     cpl.CQE_DW[2] = {16'h1, sq_head};
     cpl.CQE_DW[3] = {15'h0, 1'h1, 'h0}; //TODO
     cpl_addr = cq_base_addr + cq_tail*16;
-    host_vif.fill_dw_data_group_direct(cpl_addr, cpl.CQE_DW); 
+    hvif.fill_dw_data_group_direct(cpl_addr, cpl.CQE_DW); 
     cq_tail++;
   end
 endtask
 
 
 
-task nvme_dut::send_MSIX_intr(nvme_cmd cmd);
-  wait(host_vif.msix_intr_happens = 0);
-  host_vif.fill_dw_data_direct('h00000001, 'h12345678); 
+task nvme_dut::send_MSIX_intr();
+  wait(hvif.msix_intr_happens == 0);
+  hvif.fill_dw_data_direct('h00000001, 'h12345678); 
   #10ns;
 endtask
 

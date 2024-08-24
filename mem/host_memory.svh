@@ -7,12 +7,12 @@ class host_memory;
   //extern function void        malloc_space(int size, ref U64 addr);
   extern function void        fill_byte_data_direct(U64 addr, U8 data);
   extern function void        fill_dw_data_direct(U64 addr, U32 data);
-  extern function void        fill_dw_data_group_direct(U64 addr,  ref U32 data[$]);
-  extern function void        fill_byte_data_group_direct(U64 addr,  ref U8 data[$]);
+  extern function void        fill_dw_data_group_direct(U64 addr, ref U32 data[]);
+  extern function void        fill_byte_data_group_direct(U64 addr, ref U8 data[]);
   extern function void        take_byte_data_direct(U64 addr, U8 data);
   extern function void        take_dw_data_direct(U64 addr, U32 data);
-  extern function void        take_byte_data_group_direct(U64 addr,  ref U8 data[$]);
-  extern function void        take_dw_data_group_direct(U64 addr,  ref U32 data[$]);
+  extern function void        take_byte_data_group_direct(U64 addr, ref U8 data[]);
+  extern function void        take_dw_data_group_direct(U64 addr, ref U32 data[]);
 
 endclass
 
@@ -38,7 +38,7 @@ endfunction
 
 
 
-function void host_memory::fill_dw_data_group_direct(U64 addr, const ref U32 data[$]);
+function void host_memory::fill_dw_data_group_direct(U64 addr, ref U32 data[]);
   int size = data.size();
   for(int i; i < size; i++)begin
     mem[addr  ] = data[i][ 7: 0];
@@ -51,7 +51,7 @@ endfunction
 
 
 
-function void host_memory::fill_byte_data_group_direct(U64 addr, const ref U8 data[$]);
+function void host_memory::fill_byte_data_group_direct(U64 addr, ref U8 data[]);
   int size = data.size();
   for(int i; i < size; i++)begin
     mem[addr] = data[i];
@@ -75,7 +75,7 @@ endfunction
 
 
 
-function void host_memory::take_byte_data_group_direct(U64 addr,  ref U8 data[$]);
+function void host_memory::take_byte_data_group_direct(U64 addr,  ref U8 data[]);
   int size = data.size();
   for(int i; i < size; i++)begin
    data[i] =  mem[addr];
@@ -84,7 +84,7 @@ endfunction
 
 
 
-function void host_memory::take_dw_data_group_direct(U64 addr,  ref U32 data[$]);
+function void host_memory::take_dw_data_group_direct(U64 addr,  ref U32 data[]);
   int size = data.size();
   for(int i; i < size; i++)begin
     data[i][ 7: 0] = mem[addr  ];

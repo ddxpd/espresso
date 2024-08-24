@@ -4,6 +4,7 @@ package test_pkg;
   import misc_pkg::*;
   import bfm_pkg::*;
   import host_pkg::*;
+  import host_mem_pkg::*;
 
   `include "init_test.sv"
   `include "base_test.svh"

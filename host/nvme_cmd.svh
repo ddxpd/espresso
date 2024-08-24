@@ -3,7 +3,7 @@ class nvme_cmd extends uvm_object;
       
        nvme_function_manager  mgr;
 
-       U32         SQE_DW[NUM_DW_SQE];
+       U32         SQE_DW[];
        CMD_STAT_E  state;
 
   rand IO_OPC_E    opc;
@@ -22,6 +22,11 @@ class nvme_cmd extends uvm_object;
        U8          data[];
        int         host_tdata_size;
        int         ctrler_tdata_size;
+
+       int         host_udata_size;
+       int         host_mdata_size;
+
+
        int         udata_size;    //Only used by IO cmd
        int         mdata_size;    //Only used by IO cmd
        bit         is_admin;
@@ -36,7 +41,7 @@ class nvme_cmd extends uvm_object;
        int         usr_cqid     = -1;
        int         usr_cid      = -1;
        int         usr_nsid     = -1;
-       int         //usr_mptr;
+       //int         usr_mptr;
        int         usr_nlb      = -1;
 
   //-----------------------------------------------
@@ -79,12 +84,13 @@ class nvme_cmd extends uvm_object;
        
 
   extern function             new(string name="nvme_cmd");
-  extern function void        create_data(int size, string dp = "INCR");
+  extern function void        create_data(string dp = "INCR");
   extern function void        pre_randomize();
   extern function void        post_randomize();
   extern function void        process_self_stage_0();
-  extern function bit         is_admin();
+  extern function bit         is_admin_cmd();
   extern function void        calculate_data_size();
+  extern function PSDT_E      get_psdt();
 
 
   
@@ -94,8 +100,15 @@ endclass
 
 
 
+function nvme_cmd::new(string name="nvme_cmd");
+  super.new(name);
+  SQE_DW = new[NUM_DW_SQE];
+endfunction
+
+
+
 // dp: data pattern
-function void nvme_cmd::create_data(string dp = "INCR", );
+function void nvme_cmd::create_data(string dp = "INCR");
 
   data = new[host_tdata_size];
   case(dp)
@@ -139,7 +152,7 @@ endfunction
 
 
 
-function void nvme_cmd::is_admin();
+function bit nvme_cmd::is_admin_cmd();
   return is_admin;
 endfunction
 

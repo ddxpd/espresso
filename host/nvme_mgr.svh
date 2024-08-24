@@ -3,7 +3,7 @@ class nvme_function_manager extends uvm_object;
   `uvm_object_utils_begin(nvme_function_manager)
   `uvm_object_utils_end
   
-  subq   sub_q[int];
+  //subq   sub_q[int];
 
   int    num_sq_support;
   int    num_cq_support; 
