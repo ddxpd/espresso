@@ -6,6 +6,7 @@ class esp_host extends uvm_object;
   nvme_dut       DUT;
   nvme_cmd       cmd_waiting_q[$];
   host_vif       hvif;
+  nvme_cmd       host_cmd_map[int];
 
   int            cur_phase_bit;
   U64            cq_base_addr = 'h5000_0000;
@@ -18,7 +19,7 @@ class esp_host extends uvm_object;
 
 
   extern function        new(string name="esp_host"); 
-  extern task            post_cmd(nvme_cmd cmd);
+  extern task            post_cmd(ref nvme_cmd cmd);
   extern task            main_phase(uvm_phase phase);
   extern function        calculate_cmd_size();
   extern function        malloc_memory_space(nvme_cmd cmd);
@@ -40,7 +41,7 @@ endfunction
 
 
 
-task esp_host::post_cmd(nvme_cmd cmd);
+task esp_host::post_cmd(ref nvme_cmd cmd);
 
   //SQE_DW is not packed yet
   cmd.process_self_stage_0();
@@ -53,7 +54,7 @@ task esp_host::post_cmd(nvme_cmd cmd);
     int nlb  = cmd.SQE_DW[12][15:0];
     //calculate the cmd size
     //...
-    
+    cmd.uid = 1; 
     cmd.host_tdata_size = 64;
     cmd.create_data();
     //host assign the host memory space to the data and return DSPT
@@ -70,6 +71,7 @@ task esp_host::post_cmd(nvme_cmd cmd);
     fill_cmd_to_SQ(cmd);
     ring_doorbell(cmd, cmd.mgr);
     //cmd_waiting_q.push_back(cmd);
+    host_cmd_map[cmd.uid] = cmd;
   end
 
 
@@ -165,12 +167,14 @@ task esp_host::forever_monitor_interrupt();
     
     cq_tail_ptr = get_cq_tail(); //TODO check the phase bit in CQE
     do begin
-      nvme_cpl = nvme_cpl_entry::type_id::create("nvme_cpl", this);
+      nvme_cpl = nvme_cpl_entry::type_id::create("nvme_cpl");
       get_one_cqe(nvme_cpl);
       //suc = do_host_cpl_compare();
       suc = 1;
-      if(suc)
+      if(suc)begin
+        host_cmd_map[1].state = CMD_DONE;
         `uvm_info(get_name(), "******************INIT_TEST PASS******************", UVM_NONE)
+      end
     end while(cq_tail_ptr != cq_head_ptr);  
 
   end

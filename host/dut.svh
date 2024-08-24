@@ -104,7 +104,12 @@ endtask
 
 
 task nvme_dut::read_data(U64 addr, ref U8 data[]);
-  hvif.fill_dw_data_group_direct(addr, data); 
+  U32  data_temp[];
+  int  size = data.size();
+  data_temp = new[size];
+  hvif.fill_dw_data_group_direct(addr, data_temp); 
+  foreach(data[i])
+    data[i] = data_temp[i];
 endtask
 
 
