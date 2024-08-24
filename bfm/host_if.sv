@@ -6,6 +6,7 @@ interface host_intf();
 
   host_memory  host_mem;
   bit          msix_intr_happens;
+  U64          test;
   
 
 
