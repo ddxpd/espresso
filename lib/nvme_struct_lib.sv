@@ -161,10 +161,10 @@ typedef struct packed {
 
 //OFFSET 0x60
 typedef struct packed {
-  bit [31:8] PMRSWTV; // PMR Sustained Write Throughput
+  bit [31:8] CMDSWTV; // CMB Sustained Write Throughput
   bit [7:4] RSVD0; //
-  bit [3:0] PMRSWTU; // PMR Sustained Write Throughput Units
-} S_PMRSWTP;
+  bit [3:0] CMBSWTU; // CMB Sustained Write Throughput Units
+} S_CMBSWTP;
 
 //OFFSET 0x64
 typedef struct packed {
@@ -236,33 +236,209 @@ typedef struct packed {
 
 
 
-/************NVME COMMAND FORMAT************/
+/************NVME CMD FORMAT************/
 typedef struct packed {
   bit [31:16] CID; // Command Identifier
   bit [15:14] PSDT; // PRP or SGL for Data Transfer
   bit [13:10] RSVD0; //
   bit [09:08] FUSE; // Fused Operation
   bit [07:00] OPC; // Opcode
-} S_COMMAND_DWORD_0;
+} S_CMD_DWORD_0;
 
 typedef struct packed {
   bit [31:00] NSID;
-} S_COMMAND_DWORD_1;
+} S_CMD_DWORD_1;
 
 //DW2 and DW3 are command specific
 
 typedef struct packed {
   bit [63:00] MPTR;
-} S_COMMAND_DWORD_4_5;
+} S_CMD_DWORD_4_5;
 
 typedef struct packed {
   bit [63:00] PRP1;
-} S_COMMAND_DWORD_6_7;
+} S_CMD_DWORD_6_7;
 
 typedef struct packed {
   bit [63:00] PRP2;
-} S_COMMAND_DWORD_8_9;
+} S_CMD_DWORD_8_9;
 
+
+typedef struct packed {
+  bit [31:16] CID; // Command Identifier 
+  bit [15:00] SQID; // Submission Queue Identifier 
+} S_CMD_ABORT_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] ELID; // 1 Element Identifier 
+  bit [15:04] RSVD0; //
+  bit [03:00] OPER; // Operation 
+} S_CMD_CAP_MNGT_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] CAPL; // Capacity Lower 
+} S_CMD_CAP_MNGT_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:00] CAPU; // Capacity Upper 
+} S_CMD_CAP_MNGT_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:16] MOS; // Management Operation Specific 
+  bit [15:08] RSVD0; //
+  bit [07:00] SEL; // Select 
+} S_CMD_CTLRER_DATA_Q_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] CQS; // Create Queue Specific 
+  bit [15:01] RSVD0; //
+  bit [00:00] PC; // Physically Contiguous 
+} S_CMD_CREATE_CTLRER_DATA_Q_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:00] CDQSIZE; // Controller Data Queue Size 
+} S_CMD_CREATE_CTLRER_DATA_Q_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:16] RSVD0; //
+  bit [15:00] CDQID; // Controller Data Queue Identifier 
+} S_CMD_DELETE_CTLRER_DATA_Q_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:04] RSVD0; //
+  bit [03:00] STC; // Self-test Code 
+} S_CMD_DEVICE_SELF_TEST_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] DSTP; // Device Self-test Parameter 
+} S_CMD_DEVICE_SELF_TEST_DWORD_15;
+
+
+typedef struct packed {
+  bit [31:00] NUMD; // Number of Dwords 
+} S_CMD_DIRECTIVE_RCV_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] DSPEC; // Directive Specific 
+  bit [15:08] DTYPE; // Directive Type 
+  bit [07:00] DOPER; // Directive Operation 
+} S_CMD_DIRECTIVE_RCV_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:00] NUMD; // Number of Dwords 
+} S_CMD_DIRECTIVE_SEND_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] DSPEC; // Directive Specific 
+  bit [15:08] DTYPE; // Directive Type 
+  bit [07:00] DOPER; // Directive Operation 
+} S_CMD_DIRECTIVE_SEND_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:31] BPID; // Boot Partition ID 
+  bit [30:06] RSVD0; //
+  bit [05:03] CA; // Commit Action 
+  bit [02:00] FS; // Firmware Slot 
+} S_CMD_FIRMWARE_COMMIT_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] NUMD; // Number of Dwords 
+} S_CMD_FIRMWARE_DOWNLOAD_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] OFST; // Offset 
+} S_CMD_FIRMWARE_DOWNLOAD_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:14] RSVD0; //
+  bit [13:12] LBAFU; // LBA Format Upper 
+  bit [11:09] SES; // Secure Erase Settings 
+  bit [08:08] PIL; // 1 Protection Information Location 
+  bit [07:05] PI; // 1 Protection Information 
+  bit [04:04] MSET; // 1 Metadata Settings 
+  bit [03:00] LBAFL; // LBA Format Lower 
+} S_CMD_FORMAT_NVM_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:11] RSVD0; //
+  bit [10:08] SEL; // Select 
+  bit [07:00] FID; // Feature Identifier 
+} S_CMD_GET_FEATURE_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:07] RSVD0; //
+  bit [06:00] UIDX; // UUID Index 
+} S_CMD_GET_FEATURE_DWORD_14;
+
+
+typedef struct packed {
+  bit [31:16] NUMDL; // Number of Dwords Lower 
+  bit [15:15] RAE; // Retain Asynchronous Event 
+  bit [14:08] LSP; // Log Specific Parameter 
+  bit [07:00] LID; // Log Page Identifier 
+} S_CMD_GET_LOG_PAGE_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] LSI; // Log Specific Identifier 
+  bit [15:00] NUMDU; // Number of Dwords 
+} S_CMD_GET_LOG_PAGE_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:00] LPOL; // Log Page Offset Lower 
+} S_CMD_GET_LOG_PAGE_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:00] LPOU; // Log Page Offset Upper 
+} S_CMD_GET_LOG_PAGE_DWORD_13;
+
+
+typedef struct packed {
+  bit [31:24] CSI; // Command Set Identifier 
+  bit [23:23] OT; // Offset Type 
+  bit [22:07] RSVD0; //
+  bit [06:00] UIDX; // UUID Index 
+} S_CMD_GET_LOG_PAGE_DWORD_14;
+
+
+typedef struct packed {
+  bit [31:16] CNTID; // Controller Identifier 
+  bit [15:08] RSVD0; //
+  bit [07:00] CNS; // Controller or Namespace Structure 
+} S_CMD_IDENTIFY_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:24] CSI; // Command Set Identifier 
+  bit [23:16] RSVD0; //
+  bit [15:00] CNSSID; // CNS Specific Identifier 
+} S_IDENTIFY_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:07] RSVD0; //
+  bit [06:00] UIDX; // UUID Index 
+} S_IDENTIFY_DWORD_14;
 
 
 /************NVME COMPLETION FORMAT************/
@@ -274,200 +450,56 @@ typedef struct packed {
   bit [24:17] SC; //Status Code
   bit [16:16] PHASE; // Phase Tag
   bit [15:00] CID; // Command Identifier
-} S_DW_3;
+} S_CMPL_DW_3;
 
 
 typedef struct packed {
   bit [31:16] SQID; // SQ Identifier
   bit [15:00] SQHD; // SQ Head Pointer
-} S_DW_2;
+} S_CMPL_DW_2;
 
 
-
-/************Completion Status Code Enum************/
-typedef enum {
-  GenericCommandStatus = 'h0,
-  CommandSpecificStatus = 'h1,
-  MediaandDataIntegrityErrors = 'h2,
-  PathRelatedStatus = 'h3,
-  VendorSpecific = 'h7
-} E_STATUS_CODE_TYPE;
-
-typedef enum {
-  SuccessfulCompletion = 'h00,
-  InvalidCommandOpcode = 'h01,
-  InvalidFieldinCommand = 'h02,
-  CommandIDConflict = 'h03,
-  DataTransferError = 'h04,
-  CommandsAbortedduetoPowerLossNotification = 'h05,
-  InternalError = 'h06,
-  CommandAbortRequested = 'h07,
-  CommandAbortedduetoSQDeletion = 'h08,
-  CommandAbortedduetoFailedFusedCommand = 'h09,
-  CommandAbortedduetoMissingFusedCommand = 'h0A,
-  InvalidNamespaceorFormat = 'h0B,
-  CommandSequenceError = 'h0C,
-  InvalidSGLSegmentDescriptor = 'h0D,
-  InvalidNumberofSGLDescriptors = 'h0E,
-  DataSGLLengthInvalid = 'h0F,
-  MetadataSGLLengthInvalid = 'h10,
-  SGLDescriptorTypeInvalid = 'h11,
-  InvalidUseofControllerMemoryBuffer = 'h12,
-  PRPOffsetInvalid = 'h13,
-  AtomicWriteUnitExceeded = 'h14,
-  OperationDenied = 'h15,
-  SGLOffsetInvalid = 'h16,
-  Reserved = 'h17,
-  HostIdentifierInconsistentFormat = 'h18,
-  KeepAliveTimerExpired = 'h19,
-  KeepAliveTimeoutInvalid = 'h1A,
-  CommandAbortedduetoPreemptandAbort = 'h1B,
-  SanitizeFailed = 'h1C,
-  SanitizeInProgress = 'h1D,
-  SGLDataBlockGranularityInvalid = 'h1E,
-  CommandNotSupportedforQueueinCMB = 'h1F,
-  NamespaceisWriteProtected = 'h20,
-  CommandInterrupted = 'h21,
-  TransientTransportError = 'h22,
-  CommandProhibitedbyCommandandFeatureLockdown = 'h23,
-  AdminCommandMediaNotReady = 'h24,
-  InvalidKeyTag = 'h25,
-  HostDispersedNamespaceSupportNotEnabled = 'h26,
-  HostIdentifierNotInitialized = 'h27,
-  IncorrectKey = 'h28,
-  FDPDisabled = 'h29,
-  InvalidPlacementHandleList = 'h2A,
-  Reserved = 'h2Bhto7F,
-  LBAOutofRange = 'h80,
-  CapacityExceeded = 'h81,
-  NamespaceNotReady = 'h82,
-  ReservationConflict = 'h83,
-  FormatInProgress = 'h84,
-  InvalidValueSize = 'h85,
-  InvalidKeySize = 'h86,
-  KVKeyDoesNotExist = 'h87,
-  UnrecoveredError = 'h88,
-  KeyExists = 'h89
-  //90h to BF, Reserved
-  //C0h to FF, Vendor Specific
-} E_GENERIC_STATUS_CODE;
+typedef struct packed {
+  bit [31:01] RSVD0; //
+  bit [00:00] IANP; // Immediate Abort Not Performed 
+} S_CMPL_ABORT_DW0;
 
 
-typedef enum {
-  CompletionQueueInvalid = 'h00,
-  InvalidQueueIdentifier = 'h01,
-  InvalidQueueSize = 'h02,
-  AbortCommandLimitExceeded = 'h03,
-  Reserved = 'h04,
-  AsynchronousEventRequestLimitExceeded = 'h05,
-  InvalidFirmwareSlot = 'h06,
-  InvalidFirmwareImage = 'h07,
-  InvalidInterruptVector = 'h08,
-  InvalidLogPage = 'h09,
-  InvalidFormat = 'h0A,
-  FirmwareActivationRequiresConventionalReset = 'h0B,
-  InvalidQueueDeletion = 'h0C,
-  FeatureIdentifierNotSaveable = 'h0D,
-  FeatureNotChangeable = 'h0E,
-  FeatureNotNamespaceSpecific = 'h0F,
-  FirmwareActivationRequiresNVMSubsystemReset = 'h10,
-  FirmwareActivationRequiresControllerLevelReset = 'h11,
-  FirmwareActivationRequiresMaximumTimeViolation = 'h12,
-  FirmwareActivationProhibited = 'h13,
-  OverlappingRange = 'h14,
-  NamespaceInsufficientCapacity = 'h15,
-  NamespaceIdentifierUnavailable = 'h16,
-  Reserved = 'h17,
-  NamespaceAlreadyAttached = 'h18,
-  NamespaceIsPrivate = 'h19,
-  NamespaceNotAttached = 'h1A,
-  ThinProvisioningNotSupported = 'h1B,
-  ControllerListInvalid = 'h1C,
-  DeviceSelf-testInProgress = 'h1D,
-  BootPartitionWriteProhibited = 'h1E,
-  InvalidControllerIdentifier = 'h1F,
-  InvalidSecondaryControllerState = 'h20,
-  InvalidNumberofControllerResources = 'h21,
-  InvalidResourceIdentifier = 'h22,
-  SanitizeProhibitedWhilePersistentMemoryRegionisEnabled = 'h23,
-  ANAGroupIdentifierInvalid = 'h24,
-  ANAAttachFailed = 'h25,
-  InsufficientCapacity = 'h26,
-  NamespaceAttachmentLimitExceeded = 'h27,
-  ProhibitionofCommandExecutionNotSupported = 'h28,
-  IOCommandSetNotSupported = 'h29,
-  IOCommandSetNotEnabled = 'h2A,
-  IOCommandSetCombinationRejected = 'h2B,
-  InvalidIOCommandSet = 'h2C,
-  IdentifierUnavailable = 'h2D,
-  NamespaceIsDispersed = 'h2E,
-  InvalidDiscoveryInformation = 'h2F,
-  ZoningDataStructureLocked = 'h30,
-  ZoningDataStructureNotFound = 'h31,
-  InsufficientDiscoveryResources = 'h32,
-  RequestedFunctionDisabled = 'h33,
-  ZoneGroupOriginatorInvalid = 'h34,
-  InvalidHost = 'h35,
-  InvalidNVMSubsystem = 'h36,
-  InvalidControllerDataQueue = 'h37,
-  NotEnoughResources = 'h38,
-  ControllerSuspended = 'h39,
-  ControllerNotSuspended = 'h3A,
-  ControllerDataQueueFull = 'h3B
-} E_COMMAND_SPECIFIC_STATUS_CODE;
+typedef struct packed {
+  bit [31:24] RSVD0; //
+  bit [23:16] LID; // Log Page Identifier 
+  bit [15:08] AEI; // Asynchronous Event Information 
+  bit [07:03] RSVD1; //
+  bit [02:00] AET; // Asynchronous Event Type 
+} S_CMPL_ASYNC_DW0;
 
 
+typedef struct packed {
+  bit [31:00] EVNTSP; // Event Specific Parameter 
+} S_CMPL_ASYNC_DW1;
 
-/************Admin Command Opcode Enum************/
-typedef enum {
-  DeleteIOSubmissionQueue = 'h00,
-  CreateIOSubmissionQueue = 'h01,
-  GetLogPage = 'h02,
-  DeleteIOCompletionQueue = 'h04,
-  CreateIOCompletionQueue = 'h05,
-  Identify = 'h06,
-  Abort = 'h08,
-  SetFeatures = 'h09,
-  GetFeatures = 'h0A,
-  AsynchronousEventRequest = 'h0C,
-  NamespaceManagement = 'h0D,
-  FirmwareCommit = 'h10,
-  FirmwareImageDownload = 'h11,
-  DeviceSelf-test = 'h14,
-  NamespaceAttachment = 'h15,
-  KeepAlive = 'h18,
-  DirectiveSend = 'h19,
-  DirectiveReceive = 'h1A,
-  VirtualizationManagement = 'h1C,
-  NVMe-MISend = 'h1D,
-  NVMe-MIReceive = 'h1E,
-  CapacityManagement = 'h20,
-  DiscoveryInformationManagement = 'h21,
-  FabricZoningReceive = 'h22,
-  Lockdown = 'h24,
-  FabricZoningLookup = 'h25,
-  10ClearExportedNVMResourceConfiguration = 'h28,
-  FabricZoningSend = 'h29,
-  10CreateExportedNVMSubsystem = 'h2A,
-  10ManageExportedNVMSubsystem = 'h2D,
-  10ManageExportedNamespace = 'h31,
-  10ManageExportedPort = 'h35,
-  SendDiscoveryLogPage = 'h39,
-  TrackSend = 'h3D,
-  TrackReceive = 'h3E,
-  MigrationSend = 'h41,
-  MigrationReceive = 'h42,
-  ControllerDataQueue = 'h45,
-  DoorbellBufferConfig = 'h7C,
-  9FabricsCommands = 'h7F,
-  FormatNVM = 'h80,
-  SecuritySend = 'h81,
-  SecurityReceive = 'h82,
-  Sanitize = 'h84,
-  LoadProgram = 'h85,
-  GetLBAStatus = 'h86,
-  ProgramActivationManagement = 'h88,
-  MemoryRangeSetManagement = 'h89
-  //Vendorspecific = 'hC0h to FF,
-} E_ADMIN_CMD_OPCODE;
 
+typedef struct packed {
+  bit [31:16] RSVD0; //
+  bit [15:00] CELID; // Created Element Identifier 
+} S_CMPL_CAP_MNGT_DWORD_0;
+
+
+typedef struct packed {
+  bit [31:16] RSVD0; //
+  bit [15:00] CDQID; // Controller Data Queue Identifier 
+} S_CMPL_CTLRER_DATA_Q_DWORD_0;
+
+
+typedef struct packed {
+  bit [31:02] RSVD0; //
+  bit [01:00] MUD; // Multiple Update Detected 
+} S_CMPL_FIRMWARE_COMMIT_DWORD_0;
+
+
+typedef struct packed {
+  bit [31:03] RSVD0; //
+  bit [02:02] CHANG; //Changeable
+  bit [01:01] NSSPEC; //NS Specific
+  bit [00:00] SVBL; //Saveable
+} S_CMPL_GET_FEATURE_DWORD_0;
