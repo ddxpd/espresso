@@ -62,9 +62,7 @@ task base_test::main_phase(uvm_phase phase);
       `uvm_info(get_name(), $sformatf("cmd all send" ), UVM_LOW)
     end
     begin
-      `uvm_info(get_name(), $sformatf("cmd not all send" ), UVM_LOW)
-      while (num_cmd_send != num_cmd_done && cmd_all_send != 1) begin
-        `uvm_info(get_name(), $sformatf("state0 num_cmd_send = %0d num_cmd_done = %0d, cmd_all_send = %0d", num_cmd_send, num_cmd_done, cmd_all_send), UVM_LOW)
+      while (!(num_cmd_send == num_cmd_done && cmd_all_send == 1)) begin
         num_cmd_done = 0;
         foreach(cmd_q[i])begin
           if(cmd_q[i].state == CMD_DONE)begin
@@ -72,11 +70,11 @@ task base_test::main_phase(uvm_phase phase);
             `uvm_info(get_name(), $sformatf("cmd done %0d", num_cmd_done), UVM_LOW) 
           end
         end
-        `uvm_info(get_name(), $sformatf("state1 num_cmd_send = %0d num_cmd_done = %0d, cmd_all_send = %0d", num_cmd_send, num_cmd_done, cmd_all_send), UVM_LOW)
         #1000ns; 
-        `uvm_info(get_name(), $sformatf("state2 num_cmd_send = %0d num_cmd_done = %0d, cmd_all_send = %0d", num_cmd_send, num_cmd_done, cmd_all_send), UVM_LOW)
+        //`uvm_info(get_name(), $sformatf("state2 num_cmd_send = %0d num_cmd_done = %0d, cmd_all_send = %0d", num_cmd_send, num_cmd_done, cmd_all_send), UVM_LOW)
       end 
     end
   join
+  `uvm_info(get_name(), $sformatf("test before finish"), UVM_LOW) 
   phase.drop_objection(this);  //droping objection
 endtask

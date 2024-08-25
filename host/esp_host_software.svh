@@ -69,6 +69,7 @@ task esp_host::post_cmd(ref nvme_cmd cmd);
     //check if the corresponding SQ has enough space to put the cmd
     //When PRP and SGL is ready, put the cmd to related SQ
     fill_cmd_to_SQ(cmd);
+    `uvm_info(get_name(), $sformatf("before ring doorbell"), UVM_LOW) 
     ring_doorbell(cmd, cmd.mgr);
     //cmd_waiting_q.push_back(cmd);
     host_cmd_map[cmd.uid] = cmd;
