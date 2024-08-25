@@ -1,5 +1,5 @@
-class esp_host extends uvm_object;
-  `uvm_object_utils(esp_host)
+class esp_host extends uvm_component;
+  `uvm_component_utils(esp_host)
 
   host_memory    host_mem;
   //host_memory_manager   host_mem_mgr;
@@ -18,7 +18,7 @@ class esp_host extends uvm_object;
   U16            sq_tail_ptr;
 
 
-  extern function        new(string name="esp_host"); 
+  extern function        new(string name="esp_host", uvm_component parent); 
   extern task            post_cmd(ref nvme_cmd cmd);
   extern task            main_phase(uvm_phase phase);
   extern function        calculate_cmd_size();
@@ -35,8 +35,8 @@ endclass
 
 
 
-function esp_host::new(string name="esp_host");
-  super.new(name);
+function esp_host::new(string name="esp_host", uvm_component parent);
+  super.new(name, parent);
 endfunction
 
 
@@ -130,6 +130,9 @@ function esp_host::fill_cmd_to_SQ(nvme_cmd cmd);
   bit       size;
 
   addr = sq_base_addr + 64*sq_tail_ptr;//get_cmd_positon();
+  `uvm_info(get_name(), $sformatf("sq_base_addr = %0h, sq_base_addr = %0h, sq_tail_ptr = %0h", sq_base_addr, sq_base_addr, sq_tail_ptr), UVM_LOW) 
+  foreach(cmd.SQE_DW[i])
+    `uvm_info(get_name(), $sformatf("cmd.SQE_DW[%0d] = %0h", i, cmd.SQE_DW[i]), UVM_LOW) 
   host_mem.fill_dw_data_group_direct(addr, cmd.SQE_DW);
   sq_tail_ptr++;
 endfunction
@@ -142,6 +145,7 @@ task esp_host::ring_doorbell(nvme_cmd cmd, nvme_function_manager mgr);
   U16 sq_tail;
   
   sq_tail = sq_tail_ptr;//mgr.get_sq_tail(sqid);
+  `uvm_info(get_name(), $sformatf("sq_tail = %0h", sq_tail), UVM_LOW) 
   DUT.set_sq_tail(sq_tail); 
     
 endtask
@@ -162,10 +166,12 @@ task esp_host::forever_monitor_interrupt();
   nvme_cpl_entry   nvme_cpl;
   bit              suc;
   forever begin
+    `uvm_info(get_name(), $sformatf("start to wait MSIX"), UVM_LOW) 
     wait(hvif.msix_intr_happens == 1);
-
+    `uvm_info(get_name(), $sformatf("end to wait MSIX"), UVM_LOW)
     //got the corresponding IV
     
+    `uvm_info(get_name(), $sformatf("get the MSIX"), UVM_LOW) 
     cq_tail_ptr = get_cq_tail(); //TODO check the phase bit in CQE
     do begin
       nvme_cpl = nvme_cpl_entry::type_id::create("nvme_cpl");
@@ -177,7 +183,7 @@ task esp_host::forever_monitor_interrupt();
         `uvm_info(get_name(), "******************INIT_TEST PASS******************", UVM_NONE)
       end
     end while(cq_tail_ptr != cq_head_ptr);  
-
+    #100ns;
   end
   hvif.msix_intr_happens = 0;
 endtask
@@ -195,13 +201,18 @@ function int esp_host::get_cq_tail();
   data = new[NUM_DW_CDE];
   target_phase_bit = 1;//TEMP TODO
   do begin
+    `uvm_info(get_name(), $sformatf("addr = %0h", addr), UVM_LOW) 
     host_mem.take_dw_data_group_direct(addr, data); 
+    foreach(data[i])
+      `uvm_info(get_name(), $sformatf("data[%0d] = %0h", i, data[i]), UVM_LOW) 
     phase_bit = data[3][16];
+    `uvm_info(get_name(), $sformatf("phase_bit = %0d", phase_bit), UVM_LOW) 
     if(phase_bit == target_phase_bit)begin
       cur_tail++;
       addr += 16;
     end
     else begin
+      `uvm_info(get_name(), $sformatf("cur_tail = %0d", cur_tail), UVM_LOW) 
       return cur_tail;
     end
   end while(phase_bit == target_phase_bit);

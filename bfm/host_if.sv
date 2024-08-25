@@ -22,8 +22,11 @@ interface host_intf();
 
 
   function void fill_dw_data_direct(U64 addr, U32 data);
-    if(addr == 'h00000001 && data == 'h12345678)
+    $display("addr = %0h, data = %0h", addr, data); 
+    if(addr == 'h00000001 && data == 'h12345678)begin
       msix_intr_happens = 1; 
+      $display("MSIX triggered");
+    end
     host_mem.fill_dw_data_direct(addr, data);
   endfunction
   
@@ -33,8 +36,10 @@ interface host_intf();
     U32  data_temp[];
     int  size = data.size();
     data_temp = new[size];
-    foreach(data[i])
+    foreach(data[i])begin
       data_temp[i] = data[i];
+      $display("data_temp[%0h] = %0h", i, data_temp[i]);
+    end
     host_mem.fill_dw_data_group_direct(addr, data_temp);
   endfunction
   
