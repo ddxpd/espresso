@@ -405,13 +405,113 @@ typedef struct packed {
   bit [31:24] CSI; // Command Set Identifier
   bit [23:16] RSVD0; //
   bit [15:00] CNSSID; // CNS Specific Identifier
-} S_IDENTIFY_DWORD_11;
+} S_CMD_IDENTIFY_DWORD_11;
 
 
 typedef struct packed {
   bit [31:07] RSVD0; //
   bit [06:00] UIDX; // UUID Index
-} S_IDENTIFY_DWORD_14;
+} S_CMD_IDENTIFY_DWORD_14;
+
+
+typedef struct packed {
+  bit [31:16] RSVD0; //
+  bit [15:08] OFI; // Opcode or Feature Identifier 
+  bit [07:07] RSVD1; //
+  bit [06:05] IFC; // Interface 
+  bit [04:04] PRHBT; //Prohibit
+  bit [03:00] SCP; //Scope
+} S_CMD_LOCKDOWN_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:07] RSVD; //
+  bit [06:00] UIDX; // UUID Index 
+} S_CMD_LOCKDOWN_DWORD_14;
+
+
+typedef struct packed {
+  bit [31:16] MOS; // Management Operation Specific
+  bit [15:08] RSVD; // 
+  bit [07:00] SEL; // Select
+} S_CMD_MIGRATION_RCV_10;
+
+
+typedef struct packed {
+  bit [31:00] OL; // Offset Lower 
+} S_CMD_MIGRATION_RCV_12;
+
+
+typedef struct packed {
+  bit [31:00] OU; // Offset Upper 
+} S_CMD_MIGRATION_RCV_13;
+
+
+typedef struct packed {
+  bit [31:07] RSVD;
+  bit [06:00] UIDX; // UUID Index 
+} S_CMD_MIGRATION_RCV_14;
+
+
+typedef struct packed {
+  bit [31:00] NUMDL; // Number of Dwords
+} S_CMD_MIGRATION_RCV_15;
+
+
+typedef struct packed {
+  bit [15:08] RSVD0; //
+  bit [7:0] CSVI; // Controller State Version Index 
+} S_CMD_GET_CTLR_STATE_MNGT_OP_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:16] MOS; // Management Operation Specific
+  bit [15:08] RSVD; // 
+  bit [07:00] SEL; // Select
+} S_CMD_MIGRATION_SEND_10;
+
+
+typedef struct packed {
+  bit [31:07] RSVD;
+  bit [06:00] UIDX; // UUID Index 
+} S_CMD_MIGRATION_SEND_14;
+
+
+typedef struct packed {
+  bit [31:31] DUDMQ; //Delete User Data Migration Queue
+  bit [30:24] RSVD;
+  bit [23:16] STYPE; // Suspend Type
+  bit [15:0] CNTLID; // Controller Identifier
+} S_CMD_SUSPEND_11;
+
+
+typedef struct packed {
+  bit [31:16] RSVD;
+  bit [15:0] CNTLID; // Controller Identifier
+} S_CMD_RESUME_11;
+
+
+typedef struct packed {
+  bit [31:24] CSUUIDI; //Controller State UUID Index
+  bit [23:16] CSVI; //Controller State Version Index
+  bit [15:0] CNTLID; // Controller Identifier
+} S_SET_CTLR_STATE_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:0] CSOL; // Controller State Offset Lower
+} S_SET_CTLR_STATE_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:0] CSOU; // Controller State Offset Upper
+} S_SET_CTLR_STATE_DWORD_13;
+
+
+typedef struct packed {
+  bit [31:0] NUMD; // Number of Dwords
+} S_SET_CTLR_STATE_DWORD_15;
+
 
 typedef struct packed {
   bit [31:16] CID; // Command Identifier
@@ -468,7 +568,7 @@ typedef union {
   S_CMD_DIRECTIVE_SEND_DWORD_11       directive_send;
   S_CMD_FIRMWARE_DOWNLOAD_DWORD_11    firmware_download;
   S_CMD_GET_LOG_PAGE_DWORD_11         get_logpage;
-  S_IDENTIFY_DWORD_11                 identify;
+  S_CMD_IDENTIFY_DWORD_11             identify;
 } S_CMD_DWORD_11;
 
 
@@ -487,7 +587,7 @@ typedef union {
 typedef union {
   S_CMD_GET_FEATURE_DWORD_14          get_feature;
   S_CMD_GET_LOG_PAGE_DWORD_14         get_logpage;
-  S_IDENTIFY_DWORD_14                 identify;
+  S_CMD_IDENTIFY_DWORD_14             identify;
 } S_CMD_DWORD_14;
 
 
@@ -558,3 +658,11 @@ typedef struct packed {
   bit [01:01] NSSPEC; //NS Specific
   bit [00:00] SVBL; //Saveable
 } S_CMPL_GET_FEATURE_DWORD_0;
+
+
+
+typedef struct packed {
+  bit [31:01] RSVD0; //
+  bit [00:00] CSUP; // Controller Suspended 
+} S_CPL_GET_CTLR_STATE_MNGT_OP_DWORD_0;
+

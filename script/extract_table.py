@@ -160,7 +160,7 @@ class ParseTableFromPDF():
       self.print_error("{} does not exist. Please check file path.".format(fpath))
     self.csv_folder = "../doc/csv"
     self.pages = fitz.open(fpath)
-    self.page_ranges = [[321, 350]]
+    self.page_ranges = [[374, 379]]
     self.pages_to_detect = []
     self.current_page = 0
     #self.pages_to_detect = [74]

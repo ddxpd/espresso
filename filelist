@@ -1,4 +1,5 @@
 misc/misc_pkg.sv
+lib/nvme_trans_lib_pkg.sv
 mem/host_mem_pkg.sv
 bfm/host_if.sv
 bfm/bfm_pkg.sv
