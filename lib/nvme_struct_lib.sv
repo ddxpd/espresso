@@ -557,18 +557,25 @@ typedef union {
   S_CMD_GET_FEATURE_DWORD_10          get_feature;
   S_CMD_GET_LOG_PAGE_DWORD_10         get_logpage;
   S_CMD_IDENTIFY_DWORD_10             identify;
+  S_CMD_LOCKDOWN_DWORD_10             lockdown;
+  S_CMD_MIGRATION_RCV_10              migration_rcv;
+  S_CMD_MIGRATION_SEND_10             migration_send;
 } S_CMD_DWORD_10;
 
 
 typedef union {
-  S_CMD_CAP_MNGT_DWORD_11             cap_mngt;
-  S_CMD_CREATE_CTLRER_DATA_Q_DWORD_11 create_ctrler_data_q;
-  S_CMD_DELETE_CTLRER_DATA_Q_DWORD_11 delete_ctrler_data_q;
-  S_CMD_DIRECTIVE_RCV_DWORD_11        directive_rcv;
-  S_CMD_DIRECTIVE_SEND_DWORD_11       directive_send;
-  S_CMD_FIRMWARE_DOWNLOAD_DWORD_11    firmware_download;
-  S_CMD_GET_LOG_PAGE_DWORD_11         get_logpage;
-  S_CMD_IDENTIFY_DWORD_11             identify;
+  S_CMD_CAP_MNGT_DWORD_11                cap_mngt;
+  S_CMD_CREATE_CTLRER_DATA_Q_DWORD_11    create_ctrler_data_q;
+  S_CMD_DELETE_CTLRER_DATA_Q_DWORD_11    delete_ctrler_data_q;
+  S_CMD_DIRECTIVE_RCV_DWORD_11           directive_rcv;
+  S_CMD_DIRECTIVE_SEND_DWORD_11          directive_send;
+  S_CMD_FIRMWARE_DOWNLOAD_DWORD_11       firmware_download;
+  S_CMD_GET_LOG_PAGE_DWORD_11            get_logpage;
+  S_CMD_IDENTIFY_DWORD_11                identify;
+  S_CMD_GET_CTLR_STATE_MNGT_OP_DWORD_11  get_ctrl_state;
+  S_CMD_SUSPEND_11                       suspend;
+  S_CMD_RESUME_11                        resume;
+  S_SET_CTLR_STATE_DWORD_11              set_ctrl_state;
 } S_CMD_DWORD_11;
 
 
@@ -576,11 +583,13 @@ typedef union {
   S_CMD_CAP_MNGT_DWORD_12             cap_mngt;
   S_CMD_CREATE_CTLRER_DATA_Q_DWORD_12 create_ctrler_data_q;
   S_CMD_GET_LOG_PAGE_DWORD_12         get_logpage;
+  S_CMD_MIGRATION_RCV_12              migration_rcv;
 } S_CMD_DWORD_12;
 
 
 typedef union {
   S_CMD_GET_LOG_PAGE_DWORD_13         get_logpage;
+  S_CMD_MIGRATION_RCV_13              migration_rcv;
 } S_CMD_DWORD_13;
 
 
@@ -588,11 +597,16 @@ typedef union {
   S_CMD_GET_FEATURE_DWORD_14          get_feature;
   S_CMD_GET_LOG_PAGE_DWORD_14         get_logpage;
   S_CMD_IDENTIFY_DWORD_14             identify;
+  S_CMD_LOCKDOWN_DWORD_14             lockdown;
+  S_CMD_MIGRATION_RCV_14              migration_rcv;
+  S_CMD_MIGRATION_SEND_14             migration_send;
 } S_CMD_DWORD_14;
 
 
 typedef union {
   S_CMD_DEVICE_SELF_TEST_DWORD_15     device_self_test;
+  S_CMD_MIGRATION_RCV_15              migration_rcv;
+  S_SET_CTLR_STATE_DWORD_15           set_ctrl_state;
 } S_CMD_DWORD_15;
 
 
