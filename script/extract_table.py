@@ -43,7 +43,7 @@ class ParseTableFromPDF():
   def process_table(self, rows):
     table_head = []
     #row[0] is the head of the table, count only if col is not None
-    for col in rows[3]:
+    for col in rows[0]:
       if col != "" and col != None:
         table_head.append(col)
     #Report warning if the table exists and the column count of the head does not match the previous one.
@@ -101,6 +101,8 @@ class ParseTableFromPDF():
 
   def extract_table(self):
     self.get_page()
+    table_dict = {}
+    sub_tbl_dict = {}
     for page in self.pages:
       self.current_page += 1
       #Only check the pages to be detected --> self.pages_to_detect
@@ -108,7 +110,6 @@ class ParseTableFromPDF():
         #titles -> table name extracted from Figure xxx
         titles = []
         #table_dict - key: table count (int), value: table object
-        table_dict = {}
         #Search for tables. List of tables.
         tbl = page.find_tables()
         if len(tbl.tables) != 0:
@@ -135,20 +136,31 @@ class ParseTableFromPDF():
                 if v not in table_dict.keys():
                   table_dict[v] = obj
                   check_done = 1
+            if check_done == 0:
+              self.sub_tbl_cnt += 1
+              sub_tbl_dict[self.sub_tbl_cnt] = obj
+
 
         if len(titles) != len(table_dict.keys()):
-          self.print_error("Table Count Mismatch! {} Title != {} Table".format(len(titles), len(table_dict.keys())))
+          if len(titles) > len(table_dict.keys()):
+            self.print_error("Table Count Mismatch! {} Title != {} Table".format(len(titles), len(table_dict.keys())))
+          else:
+            titles.append("dummy")
         else:
           for i in range(0, len(titles)):
             self.update_table_name(titles[i])
             self.process_table(table_dict[i+1].extract())
+    for key in sub_tbl_dict.keys():
+      self.update_table_name("sub_table_{}".format(key))
+      self.process_table(sub_tbl_dict[key].extract())
+
 
   def __init__(self, fpath):
     if not os.path.isfile(fpath):
       self.print_error("{} does not exist. Please check file path.".format(fpath))
     self.csv_folder = "../doc/csv"
     self.pages = fitz.open(fpath)
-    self.page_ranges = [[191, 192]]
+    self.page_ranges = [[321, 350]]
     self.pages_to_detect = []
     self.current_page = 0
     #self.pages_to_detect = [74]
@@ -164,6 +176,7 @@ class ParseTableFromPDF():
     s = s.strip(", ")
     print("Search tables on page {}".format(s))
     os.system("rm ../doc/csv/*.csv")
+    self.sub_tbl_cnt = 0
 
 nvme_base_spec = ParseTableFromPDF("../doc/nvme_protocol/NVM-Express-Base-Specification-Revision-2.1-2024.08.05-Ratified.pdf")
 nvme_base_spec.extract_table()
