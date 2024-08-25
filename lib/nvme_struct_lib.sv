@@ -239,15 +239,193 @@ typedef struct packed {
 /************NVME CMD FORMAT************/
 typedef struct packed {
   bit [31:16] CID; // Command Identifier
+  bit [15:00] SQID; // Submission Queue Identifier
+} S_CMD_ABORT_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] ELID; // 1 Element Identifier
+  bit [15:04] RSVD0; //
+  bit [03:00] OPER; // Operation
+} S_CMD_CAP_MNGT_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] CAPL; // Capacity Lower
+} S_CMD_CAP_MNGT_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:00] CAPU; // Capacity Upper
+} S_CMD_CAP_MNGT_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:16] MOS; // Management Operation Specific
+  bit [15:08] RSVD0; //
+  bit [07:00] SEL; // Select
+} S_CMD_CTLRER_DATA_Q_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] CQS; // Create Queue Specific
+  bit [15:01] RSVD0; //
+  bit [00:00] PC; // Physically Contiguous
+} S_CMD_CREATE_CTLRER_DATA_Q_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:00] CDQSIZE; // Controller Data Queue Size
+} S_CMD_CREATE_CTLRER_DATA_Q_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:16] RSVD0; //
+  bit [15:00] CDQID; // Controller Data Queue Identifier
+} S_CMD_DELETE_CTLRER_DATA_Q_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:04] RSVD0; //
+  bit [03:00] STC; // Self-test Code
+} S_CMD_DEVICE_SELF_TEST_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] DSTP; // Device Self-test Parameter
+} S_CMD_DEVICE_SELF_TEST_DWORD_15;
+
+
+typedef struct packed {
+  bit [31:00] NUMD; // Number of Dwords
+} S_CMD_DIRECTIVE_RCV_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] DSPEC; // Directive Specific
+  bit [15:08] DTYPE; // Directive Type
+  bit [07:00] DOPER; // Directive Operation
+} S_CMD_DIRECTIVE_RCV_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:00] NUMD; // Number of Dwords
+} S_CMD_DIRECTIVE_SEND_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] DSPEC; // Directive Specific
+  bit [15:08] DTYPE; // Directive Type
+  bit [07:00] DOPER; // Directive Operation
+} S_CMD_DIRECTIVE_SEND_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:31] BPID; // Boot Partition ID
+  bit [30:06] RSVD0; //
+  bit [05:03] CA; // Commit Action
+  bit [02:00] FS; // Firmware Slot
+} S_CMD_FIRMWARE_COMMIT_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] NUMD; // Number of Dwords
+} S_CMD_FIRMWARE_DOWNLOAD_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] OFST; // Offset
+} S_CMD_FIRMWARE_DOWNLOAD_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:14] RSVD0; //
+  bit [13:12] LBAFU; // LBA Format Upper
+  bit [11:09] SES; // Secure Erase Settings
+  bit [08:08] PIL; // 1 Protection Information Location
+  bit [07:05] PI; // 1 Protection Information
+  bit [04:04] MSET; // 1 Metadata Settings
+  bit [03:00] LBAFL; // LBA Format Lower
+} S_CMD_FORMAT_NVM_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:11] RSVD0; //
+  bit [10:08] SEL; // Select
+  bit [07:00] FID; // Feature Identifier
+} S_CMD_GET_FEATURE_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:07] RSVD0; //
+  bit [06:00] UIDX; // UUID Index
+} S_CMD_GET_FEATURE_DWORD_14;
+
+
+typedef struct packed {
+  bit [31:16] NUMDL; // Number of Dwords Lower
+  bit [15:15] RAE; // Retain Asynchronous Event
+  bit [14:08] LSP; // Log Specific Parameter
+  bit [07:00] LID; // Log Page Identifier
+} S_CMD_GET_LOG_PAGE_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] LSI; // Log Specific Identifier
+  bit [15:00] NUMDU; // Number of Dwords
+} S_CMD_GET_LOG_PAGE_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:00] LPOL; // Log Page Offset Lower
+} S_CMD_GET_LOG_PAGE_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:00] LPOU; // Log Page Offset Upper
+} S_CMD_GET_LOG_PAGE_DWORD_13;
+
+
+typedef struct packed {
+  bit [31:24] CSI; // Command Set Identifier
+  bit [23:23] OT; // Offset Type
+  bit [22:07] RSVD0; //
+  bit [06:00] UIDX; // UUID Index
+} S_CMD_GET_LOG_PAGE_DWORD_14;
+
+
+typedef struct packed {
+  bit [31:16] CNTID; // Controller Identifier
+  bit [15:08] RSVD0; //
+  bit [07:00] CNS; // Controller or Namespace Structure
+} S_CMD_IDENTIFY_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:24] CSI; // Command Set Identifier
+  bit [23:16] RSVD0; //
+  bit [15:00] CNSSID; // CNS Specific Identifier
+} S_IDENTIFY_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:07] RSVD0; //
+  bit [06:00] UIDX; // UUID Index
+} S_IDENTIFY_DWORD_14;
+
+typedef struct packed {
+  bit [31:16] CID; // Command Identifier
   bit [15:14] PSDT; // PRP or SGL for Data Transfer
   bit [13:10] RSVD0; //
   bit [09:08] FUSE; // Fused Operation
   bit [07:00] OPC; // Opcode
 } S_CMD_DWORD_0;
 
+
 typedef struct packed {
   bit [31:00] NSID;
 } S_CMD_DWORD_1;
+
 
 //DW2 and DW3 are command specific
 
@@ -255,190 +433,67 @@ typedef struct packed {
   bit [63:00] MPTR;
 } S_CMD_DWORD_4_5;
 
+
 typedef struct packed {
   bit [63:00] PRP1;
 } S_CMD_DWORD_6_7;
+
 
 typedef struct packed {
   bit [63:00] PRP2;
 } S_CMD_DWORD_8_9;
 
 
-typedef struct packed {
-  bit [31:16] CID; // Command Identifier 
-  bit [15:00] SQID; // Submission Queue Identifier 
-} S_CMD_ABORT_DWORD_10;
+typedef union {
+  S_CMD_ABORT_DWORD_10                abort;
+  S_CMD_CAP_MNGT_DWORD_10             cap_mngt;
+  S_CMD_CTLRER_DATA_Q_DWORD_10        ctrler_data_q;
+  S_CMD_DEVICE_SELF_TEST_DWORD_10     device_self_test;
+  S_CMD_DIRECTIVE_RCV_DWORD_10        directive_rcv;
+  S_CMD_DIRECTIVE_SEND_DWORD_10       directive_send;
+  S_CMD_FIRMWARE_COMMIT_DWORD_10      firmware_commit;
+  S_CMD_FIRMWARE_DOWNLOAD_DWORD_10    firmware_download;
+  S_CMD_FORMAT_NVM_DWORD_10           format_nvm;
+  S_CMD_GET_FEATURE_DWORD_10          get_feature;
+  S_CMD_GET_LOG_PAGE_DWORD_10         get_logpage;
+  S_CMD_IDENTIFY_DWORD_10             identify;
+} S_CMD_DWORD_10;
 
 
-typedef struct packed {
-  bit [31:16] ELID; // 1 Element Identifier 
-  bit [15:04] RSVD0; //
-  bit [03:00] OPER; // Operation 
-} S_CMD_CAP_MNGT_DWORD_10;
+typedef union {
+  S_CMD_CAP_MNGT_DWORD_11             cap_mngt;
+  S_CMD_CREATE_CTLRER_DATA_Q_DWORD_11 create_ctrler_data_q;
+  S_CMD_DELETE_CTLRER_DATA_Q_DWORD_11 delete_ctrler_data_q;
+  S_CMD_DIRECTIVE_RCV_DWORD_11        directive_rcv;
+  S_CMD_DIRECTIVE_SEND_DWORD_11       directive_send;
+  S_CMD_FIRMWARE_DOWNLOAD_DWORD_11    firmware_download;
+  S_CMD_GET_LOG_PAGE_DWORD_11         get_logpage;
+  S_IDENTIFY_DWORD_11                 identify;
+} S_CMD_DWORD_11;
 
 
-typedef struct packed {
-  bit [31:00] CAPL; // Capacity Lower 
-} S_CMD_CAP_MNGT_DWORD_11;
+typedef union {
+  S_CMD_CAP_MNGT_DWORD_12             cap_mngt;
+  S_CMD_CREATE_CTLRER_DATA_Q_DWORD_12 create_ctrler_data_q;
+  S_CMD_GET_LOG_PAGE_DWORD_12         get_logpage;
+} S_CMD_DWORD_12;
 
 
-typedef struct packed {
-  bit [31:00] CAPU; // Capacity Upper 
-} S_CMD_CAP_MNGT_DWORD_12;
+typedef union {
+  S_CMD_GET_LOG_PAGE_DWORD_13         get_logpage;
+} S_CMD_DWORD_13;
 
 
-typedef struct packed {
-  bit [31:16] MOS; // Management Operation Specific 
-  bit [15:08] RSVD0; //
-  bit [07:00] SEL; // Select 
-} S_CMD_CTLRER_DATA_Q_DWORD_10;
+typedef union {
+  S_CMD_GET_FEATURE_DWORD_14          get_feature;
+  S_CMD_GET_LOG_PAGE_DWORD_14         get_logpage;
+  S_IDENTIFY_DWORD_14                 identify;
+} S_CMD_DWORD_14;
 
 
-typedef struct packed {
-  bit [31:16] CQS; // Create Queue Specific 
-  bit [15:01] RSVD0; //
-  bit [00:00] PC; // Physically Contiguous 
-} S_CMD_CREATE_CTLRER_DATA_Q_DWORD_11;
-
-
-typedef struct packed {
-  bit [31:00] CDQSIZE; // Controller Data Queue Size 
-} S_CMD_CREATE_CTLRER_DATA_Q_DWORD_12;
-
-
-typedef struct packed {
-  bit [31:16] RSVD0; //
-  bit [15:00] CDQID; // Controller Data Queue Identifier 
-} S_CMD_DELETE_CTLRER_DATA_Q_DWORD_11;
-
-
-typedef struct packed {
-  bit [31:04] RSVD0; //
-  bit [03:00] STC; // Self-test Code 
-} S_CMD_DEVICE_SELF_TEST_DWORD_10;
-
-
-typedef struct packed {
-  bit [31:00] DSTP; // Device Self-test Parameter 
-} S_CMD_DEVICE_SELF_TEST_DWORD_15;
-
-
-typedef struct packed {
-  bit [31:00] NUMD; // Number of Dwords 
-} S_CMD_DIRECTIVE_RCV_DWORD_10;
-
-
-typedef struct packed {
-  bit [31:16] DSPEC; // Directive Specific 
-  bit [15:08] DTYPE; // Directive Type 
-  bit [07:00] DOPER; // Directive Operation 
-} S_CMD_DIRECTIVE_RCV_DWORD_11;
-
-
-typedef struct packed {
-  bit [31:00] NUMD; // Number of Dwords 
-} S_CMD_DIRECTIVE_SEND_DWORD_10;
-
-
-typedef struct packed {
-  bit [31:16] DSPEC; // Directive Specific 
-  bit [15:08] DTYPE; // Directive Type 
-  bit [07:00] DOPER; // Directive Operation 
-} S_CMD_DIRECTIVE_SEND_DWORD_11;
-
-
-typedef struct packed {
-  bit [31:31] BPID; // Boot Partition ID 
-  bit [30:06] RSVD0; //
-  bit [05:03] CA; // Commit Action 
-  bit [02:00] FS; // Firmware Slot 
-} S_CMD_FIRMWARE_COMMIT_DWORD_10;
-
-
-typedef struct packed {
-  bit [31:00] NUMD; // Number of Dwords 
-} S_CMD_FIRMWARE_DOWNLOAD_DWORD_10;
-
-
-typedef struct packed {
-  bit [31:00] OFST; // Offset 
-} S_CMD_FIRMWARE_DOWNLOAD_DWORD_11;
-
-
-typedef struct packed {
-  bit [31:14] RSVD0; //
-  bit [13:12] LBAFU; // LBA Format Upper 
-  bit [11:09] SES; // Secure Erase Settings 
-  bit [08:08] PIL; // 1 Protection Information Location 
-  bit [07:05] PI; // 1 Protection Information 
-  bit [04:04] MSET; // 1 Metadata Settings 
-  bit [03:00] LBAFL; // LBA Format Lower 
-} S_CMD_FORMAT_NVM_DWORD_10;
-
-
-typedef struct packed {
-  bit [31:11] RSVD0; //
-  bit [10:08] SEL; // Select 
-  bit [07:00] FID; // Feature Identifier 
-} S_CMD_GET_FEATURE_DWORD_10;
-
-
-typedef struct packed {
-  bit [31:07] RSVD0; //
-  bit [06:00] UIDX; // UUID Index 
-} S_CMD_GET_FEATURE_DWORD_14;
-
-
-typedef struct packed {
-  bit [31:16] NUMDL; // Number of Dwords Lower 
-  bit [15:15] RAE; // Retain Asynchronous Event 
-  bit [14:08] LSP; // Log Specific Parameter 
-  bit [07:00] LID; // Log Page Identifier 
-} S_CMD_GET_LOG_PAGE_DWORD_10;
-
-
-typedef struct packed {
-  bit [31:16] LSI; // Log Specific Identifier 
-  bit [15:00] NUMDU; // Number of Dwords 
-} S_CMD_GET_LOG_PAGE_DWORD_11;
-
-
-typedef struct packed {
-  bit [31:00] LPOL; // Log Page Offset Lower 
-} S_CMD_GET_LOG_PAGE_DWORD_12;
-
-
-typedef struct packed {
-  bit [31:00] LPOU; // Log Page Offset Upper 
-} S_CMD_GET_LOG_PAGE_DWORD_13;
-
-
-typedef struct packed {
-  bit [31:24] CSI; // Command Set Identifier 
-  bit [23:23] OT; // Offset Type 
-  bit [22:07] RSVD0; //
-  bit [06:00] UIDX; // UUID Index 
-} S_CMD_GET_LOG_PAGE_DWORD_14;
-
-
-typedef struct packed {
-  bit [31:16] CNTID; // Controller Identifier 
-  bit [15:08] RSVD0; //
-  bit [07:00] CNS; // Controller or Namespace Structure 
-} S_CMD_IDENTIFY_DWORD_10;
-
-
-typedef struct packed {
-  bit [31:24] CSI; // Command Set Identifier 
-  bit [23:16] RSVD0; //
-  bit [15:00] CNSSID; // CNS Specific Identifier 
-} S_IDENTIFY_DWORD_11;
-
-
-typedef struct packed {
-  bit [31:07] RSVD0; //
-  bit [06:00] UIDX; // UUID Index 
-} S_IDENTIFY_DWORD_14;
+typedef union {
+  S_CMD_DEVICE_SELF_TEST_DWORD_15     device_self_test;
+} S_CMD_DWORD_15;
 
 
 /************NVME COMPLETION FORMAT************/
@@ -461,39 +516,39 @@ typedef struct packed {
 
 typedef struct packed {
   bit [31:01] RSVD0; //
-  bit [00:00] IANP; // Immediate Abort Not Performed 
+  bit [00:00] IANP; // Immediate Abort Not Performed
 } S_CMPL_ABORT_DW0;
 
 
 typedef struct packed {
   bit [31:24] RSVD0; //
-  bit [23:16] LID; // Log Page Identifier 
-  bit [15:08] AEI; // Asynchronous Event Information 
+  bit [23:16] LID; // Log Page Identifier
+  bit [15:08] AEI; // Asynchronous Event Information
   bit [07:03] RSVD1; //
-  bit [02:00] AET; // Asynchronous Event Type 
+  bit [02:00] AET; // Asynchronous Event Type
 } S_CMPL_ASYNC_DW0;
 
 
 typedef struct packed {
-  bit [31:00] EVNTSP; // Event Specific Parameter 
+  bit [31:00] EVNTSP; // Event Specific Parameter
 } S_CMPL_ASYNC_DW1;
 
 
 typedef struct packed {
   bit [31:16] RSVD0; //
-  bit [15:00] CELID; // Created Element Identifier 
+  bit [15:00] CELID; // Created Element Identifier
 } S_CMPL_CAP_MNGT_DWORD_0;
 
 
 typedef struct packed {
   bit [31:16] RSVD0; //
-  bit [15:00] CDQID; // Controller Data Queue Identifier 
+  bit [15:00] CDQID; // Controller Data Queue Identifier
 } S_CMPL_CTLRER_DATA_Q_DWORD_0;
 
 
 typedef struct packed {
   bit [31:02] RSVD0; //
-  bit [01:00] MUD; // Multiple Update Detected 
+  bit [01:00] MUD; // Multiple Update Detected
 } S_CMPL_FIRMWARE_COMMIT_DWORD_0;
 
 

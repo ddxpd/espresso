@@ -154,8 +154,8 @@ class identify_controller_data_struct extends uvm_object;
   bit [255:0] PSD31; //Power State 31 Descriptor  - Bytes 3071:3040
   bit [8191:0] VS; //Vendor Specific  - Bytes 4095:3072
 
-  U8  raw_bytes[4096];
-  U32 raw_dwords[1024];
+  U8  [4095:0] raw_bytes;
+  U32 [1023:0] raw_dwords;
 
   function void pack_bytes();
     raw_bytes[01:00] = VID;
