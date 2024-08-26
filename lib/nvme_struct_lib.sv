@@ -495,22 +495,125 @@ typedef struct packed {
   bit [31:24] CSUUIDI; //Controller State UUID Index
   bit [23:16] CSVI; //Controller State Version Index
   bit [15:0] CNTLID; // Controller Identifier
-} S_SET_CTLR_STATE_DWORD_11;
+} S_CMD_SET_CTLR_STATE_DWORD_11;
 
 
 typedef struct packed {
   bit [31:0] CSOL; // Controller State Offset Lower
-} S_SET_CTLR_STATE_DWORD_12;
+} S_CMD_SET_CTLR_STATE_DWORD_12;
 
 
 typedef struct packed {
   bit [31:0] CSOU; // Controller State Offset Upper
-} S_SET_CTLR_STATE_DWORD_13;
+} S_CMD_SET_CTLR_STATE_DWORD_13;
 
 
 typedef struct packed {
   bit [31:0] NUMD; // Number of Dwords
-} S_SET_CTLR_STATE_DWORD_15;
+} S_CMD_SET_CTLR_STATE_DWORD_15;
+
+
+typedef struct packed {
+  bit [31:04] RSVD0; //
+  bit [03:00] SEL; // Select 
+} S_CMD_NS_ATTACH_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:04] RSVD0; //
+  bit [03:00] SEL; // Select 
+} S_CMD_NS_MANAGEMENT_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:24] CSI; //Command Set Identifier
+  bit [23:00] RSVD0;
+} S_CMD_NS_MANAGEMENT_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:11] RSVD0; //
+  bit [10:10] EMVS; // Enter Media Verification State 
+  bit [09:09] NDAS; // No-Deallocate After Sanitize 
+  bit [08:08] OIPBP; // Overwrite Invert Pattern Between Passes 
+  bit [07:04] OWPASS; // Overwrite Pass Count 
+  bit [03:03] AUSE; // Allow Unrestricted Sanitize Exit 
+  bit [02:00] SANACT;//Sanitize Action
+} S_CMD_SANITIZE_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] OVRPAT; // Overwrite Pattern 
+} S_CMD_SANITIZE_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:24] SECP; //Security Protocol
+  bit [23:16] SPSP1; //SP Specific 1
+  bit [15:08] SPSP0; //SP Specific 0
+  bit [07:00] NSSF; //NVMe Security Specific Field
+} S_CMD_SECURITY_RCV_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] AL; //Allocation Length
+} S_CMD_SECURITY_RCV_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:24] SECP; //Security Protocol
+  bit [23:16] SPSP1; //SP Specific 1
+  bit [15:08] SPSP0; //SP Specific 0
+  bit [07:00] NSSF; //NVMe Security Specific Field
+} S_CMD_SECURITY_SEND_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] TL; //Transfer Length
+} S_CMD_SECURITY_SEND_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:31] SV; // Save 
+  bit [30:08] RSVD0; //
+  bit [07:00] FID; // Feature Identifier 
+} S_CMD_SET_FEATURE_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:07] RSVD0; //
+  bit [06:00] UIDX; // UUID Index 
+} S_CMD_SET_FEATURE_DWORD_14;
+
+
+typedef struct packed {
+  bit [31:08] RSVD0; //
+  bit [07:00] SEL; // Select  
+} S_CMD_TRACK_RCV_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] NUMDL; // Number of Dwords  
+} S_CMD_TRACK_RCV_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:16] RSVD0; //
+  bit [15:00] CNTLID; // Controller Identifier
+} S_CMD_TRACK_RCV_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:16] MOS; // Management Operation Specific
+  bit [15:08] RSVD0; //
+  bit [07:00] SEL; // Select  
+} S_CMD_TRACK_SEND_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] RSVD0; //
+  bit [15:00] CNTLID; // Controller Identifier
+} S_CMD_TRACK_SEND_DWORD_11;
 
 
 typedef struct packed {
@@ -560,6 +663,11 @@ typedef union {
   S_CMD_LOCKDOWN_DWORD_10             lockdown;
   S_CMD_MIGRATION_RCV_10              migration_rcv;
   S_CMD_MIGRATION_SEND_10             migration_send;
+  S_CMD_NS_ATTACH_DWORD_10            ns_attach;
+  S_CMD_NS_MANAGEMENT_DWORD_10        ns_management;
+  S_CMD_SECURITY_RCV_DWORD_10         security_rcv;
+  S_CMD_SECURITY_SEND_DWORD_10        security_send;
+  S_CMD_SET_FEATURE_DWORD_10          set_feature;
 } S_CMD_DWORD_10;
 
 
@@ -575,7 +683,10 @@ typedef union {
   S_CMD_GET_CTLR_STATE_MNGT_OP_DWORD_11  get_ctrl_state;
   S_CMD_SUSPEND_11                       suspend;
   S_CMD_RESUME_11                        resume;
-  S_SET_CTLR_STATE_DWORD_11              set_ctrl_state;
+  S_CMD_SET_CTLR_STATE_DWORD_11          set_ctrl_state;
+  S_CMD_NS_MANAGEMENT_DWORD_11           ns_management;
+  S_CMD_SECURITY_RCV_DWORD_11            security_rcv;
+  S_CMD_SECURITY_SEND_DWORD_11           security_send;
 } S_CMD_DWORD_11;
 
 
@@ -600,13 +711,14 @@ typedef union {
   S_CMD_LOCKDOWN_DWORD_14             lockdown;
   S_CMD_MIGRATION_RCV_14              migration_rcv;
   S_CMD_MIGRATION_SEND_14             migration_send;
+  S_CMD_SET_FEATURE_DWORD_14          set_feature;
 } S_CMD_DWORD_14;
 
 
 typedef union {
   S_CMD_DEVICE_SELF_TEST_DWORD_15     device_self_test;
   S_CMD_MIGRATION_RCV_15              migration_rcv;
-  S_SET_CTLR_STATE_DWORD_15           set_ctrl_state;
+  S_CMD_SET_CTLR_STATE_DWORD_15       set_ctrl_state;
 } S_CMD_DWORD_15;
 
 
@@ -674,9 +786,13 @@ typedef struct packed {
 } S_CMPL_GET_FEATURE_DWORD_0;
 
 
-
 typedef struct packed {
   bit [31:01] RSVD0; //
   bit [00:00] CSUP; // Controller Suspended 
 } S_CPL_GET_CTLR_STATE_MNGT_OP_DWORD_0;
+
+
+typedef struct packed {
+  bit [31:00] NSID; //Namespace Identifier
+} S_CPL_NS_MANAGEMENT_DWORD_0;
 

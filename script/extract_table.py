@@ -136,9 +136,9 @@ class ParseTableFromPDF():
                 if v not in table_dict.keys():
                   table_dict[v] = obj
                   check_done = 1
-            if check_done == 0:
-              self.sub_tbl_cnt += 1
-              sub_tbl_dict[self.sub_tbl_cnt] = obj
+            #if check_done == 0:
+            #  self.sub_tbl_cnt += 1
+            #  sub_tbl_dict[self.sub_tbl_cnt] = obj
 
 
         if len(titles) != len(table_dict.keys()):
@@ -150,9 +150,9 @@ class ParseTableFromPDF():
           for i in range(0, len(titles)):
             self.update_table_name(titles[i])
             self.process_table(table_dict[i+1].extract())
-    for key in sub_tbl_dict.keys():
-      self.update_table_name("sub_table_{}".format(key))
-      self.process_table(sub_tbl_dict[key].extract())
+    #for key in sub_tbl_dict.keys():
+    #  self.update_table_name("sub_table_{}".format(key))
+    #  self.process_table(sub_tbl_dict[key].extract())
 
 
   def __init__(self, fpath):
@@ -160,7 +160,7 @@ class ParseTableFromPDF():
       self.print_error("{} does not exist. Please check file path.".format(fpath))
     self.csv_folder = "../doc/csv"
     self.pages = fitz.open(fpath)
-    self.page_ranges = [[374, 379]]
+    self.page_ranges = [[393, 393]]
     self.pages_to_detect = []
     self.current_page = 0
     #self.pages_to_detect = [74]
