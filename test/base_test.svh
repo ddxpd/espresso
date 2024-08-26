@@ -37,6 +37,7 @@ function void base_test::connect_phase(uvm_phase phase);
   super.connect_phase(phase);
   host.host_mem     = host_mem;
   host.DUT          = DUT;
+  host.hvif         = hvif;
   DUT.hvif          = hvif;
   hvif.host_mem     = host_mem;
 endfunction
@@ -54,6 +55,7 @@ task base_test::main_phase(uvm_phase phase);
     begin
       cmd = nvme_cmd::type_id::create("cmd", this);
       cmd.sqid = 1;
+      cmd.opc = NVME_WRITE;
       host.post_cmd(cmd); 
       num_cmd_send++;
       cmd_q.push_back(cmd);
