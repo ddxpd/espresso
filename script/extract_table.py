@@ -91,7 +91,6 @@ class ParseTableFromPDF():
     f.close()
     print ("CSV file output at {}".format(fname))
 
-
   def get_page(self):
     for r in self.page_ranges:
       r_min = r[0]
