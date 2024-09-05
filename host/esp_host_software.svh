@@ -9,11 +9,11 @@ class esp_host extends uvm_component;
   nvme_cmd       host_cmd_map[int];
 
   int            cur_phase_bit;
-  U64            cq_base_addr = 'h5000_0000;
+  U64            cq_base_addr = 'h5_0000;
   U16            cq_head_ptr; 
   U16            cq_tail_ptr; 
 
-  U64            sq_base_addr = 'h6000_0000;
+  U64            sq_base_addr = 'h6_0000;
   U16            sq_head_ptr; 
   U16            sq_tail_ptr;
 
@@ -69,7 +69,6 @@ task esp_host::post_cmd(ref nvme_cmd cmd);
     //check if the corresponding SQ has enough space to put the cmd
     //When PRP and SGL is ready, put the cmd to related SQ
     fill_cmd_to_SQ(cmd);
-    `uvm_info(get_name(), $sformatf("before ring doorbell"), UVM_LOW) 
     ring_doorbell(cmd, cmd.mgr);
     //cmd_waiting_q.push_back(cmd);
     host_cmd_map[cmd.uid] = cmd;
@@ -95,7 +94,7 @@ function esp_host::malloc_memory_space(nvme_cmd cmd);
   bit[HOST_AXI_WIDTH-1:0] addr;
   //malloc_space(cmd.data_size, addr);
   //temp assign
-  addr = 'h8000_0000;
+  addr = 'h8_0000;
   cmd.SQE_DW[6] = addr[31:0];
   cmd.SQE_DW[7] = addr[63:32];
   //PRP and SGL
@@ -115,25 +114,34 @@ endfunction
 
 function esp_host::fill_data_to_host_mem(nvme_cmd cmd);
   bit[HOST_AXI_WIDTH-1:0] addr;
-  bit       size;
+  int       size;
 
   size = cmd.data.size();
   addr = {cmd.SQE_DW[7], cmd.SQE_DW[6]};
-  for(int i; i < size; i++)
+  `uvm_info(get_name(), $sformatf("cmd size = %0d", size), UVM_LOW) 
+  for(int i = 0; i < size; i++)begin
+    `uvm_info(get_name(), $sformatf("cmd.data[%0h] = %0h", i, cmd.data[i]), UVM_LOW) 
     host_mem.fill_byte_data_direct(addr+i, cmd.data[i]);
+  end
 endfunction
 
 
 
 function esp_host::fill_cmd_to_SQ(nvme_cmd cmd);
   bit[HOST_AXI_WIDTH-1:0] addr;
-  bit       size;
+  U32     JFT[];
+
+  JFT = new[16];
 
   addr = sq_base_addr + 64*sq_tail_ptr;//get_cmd_positon();
   `uvm_info(get_name(), $sformatf("sq_base_addr = %0h, sq_base_addr = %0h, sq_tail_ptr = %0h", sq_base_addr, sq_base_addr, sq_tail_ptr), UVM_LOW) 
-  foreach(cmd.SQE_DW[i])
+  foreach(cmd.SQE_DW[i])begin
+    //JFT[i] = cmd.SQE_DW[i];
     `uvm_info(get_name(), $sformatf("cmd.SQE_DW[%0d] = %0h", i, cmd.SQE_DW[i]), UVM_LOW) 
+
+  end
   host_mem.fill_dw_data_group_direct(addr, cmd.SQE_DW);
+  //host_mem.fill_dw_data_group_direct(addr, JFT);
   sq_tail_ptr++;
 endfunction
 
@@ -168,10 +176,8 @@ task esp_host::forever_monitor_interrupt();
   forever begin
     `uvm_info(get_name(), $sformatf("start to wait MSIX"), UVM_LOW) 
     wait(hvif.msix_intr_happens == 1);
-    `uvm_info(get_name(), $sformatf("end to wait MSIX"), UVM_LOW)
+    `uvm_info(get_name(), $sformatf("msix_intr_happens"), UVM_LOW)
     //got the corresponding IV
-    
-    `uvm_info(get_name(), $sformatf("get the MSIX"), UVM_LOW) 
     cq_tail_ptr = get_cq_tail(); //TODO check the phase bit in CQE
     do begin
       nvme_cpl = nvme_cpl_entry::type_id::create("nvme_cpl");
@@ -183,9 +189,11 @@ task esp_host::forever_monitor_interrupt();
         `uvm_info(get_name(), "******************INIT_TEST PASS******************", UVM_NONE)
       end
     end while(cq_tail_ptr != cq_head_ptr);  
+    hvif.msix_intr_happens = 0;
+    `uvm_info(get_name(), $sformatf("Handle msix_intr_happens Done"), UVM_LOW)
     #100ns;
   end
-  hvif.msix_intr_happens = 0;
+  
 endtask
 
 
@@ -201,10 +209,8 @@ function int esp_host::get_cq_tail();
   data = new[NUM_DW_CDE];
   target_phase_bit = 1;//TEMP TODO
   do begin
-    `uvm_info(get_name(), $sformatf("addr = %0h", addr), UVM_LOW) 
+    `uvm_info(get_name(), $sformatf("========Check the CQE of addr %0h========", addr), UVM_LOW) 
     host_mem.take_dw_data_group_direct(addr, data); 
-    foreach(data[i])
-      `uvm_info(get_name(), $sformatf("data[%0d] = %0h", i, data[i]), UVM_LOW) 
     phase_bit = data[3][16];
     `uvm_info(get_name(), $sformatf("phase_bit = %0d", phase_bit), UVM_LOW) 
     if(phase_bit == target_phase_bit)begin
@@ -229,6 +235,7 @@ task esp_host::get_one_cqe(ref nvme_cpl_entry nvme_cpl);
   foreach(nvme_cpl.CQE_DW[i])
     nvme_cpl.CQE_DW[i] = data[i];
   cq_head_ptr++;
+  `uvm_info(get_name(), $sformatf("Update the cq_head_ptr = %0h", cq_head_ptr), UVM_LOW) 
 endtask
 
 

@@ -1,5 +1,5 @@
 class nvme_cmd extends uvm_object;
-  `uvm_object_utils(nvme_cmd)
+  
       
        nvme_function_manager  mgr;
 
@@ -43,6 +43,15 @@ class nvme_cmd extends uvm_object;
        int         usr_nsid     = -1;
        //int         usr_mptr;
        int         usr_nlb      = -1;
+
+  `uvm_object_utils(nvme_cmd)
+
+  //`uvm_object_utils_begin(nvme_cmd)
+  //  `uvm_field_int      (addr, UVM_ALL_ON)
+  //  `uvm_field_queue_int(data, UVM_ALL_ON)
+  //  `uvm_field_object   (ext,  UVM_ALL_ON)
+  //  `uvm_field_string   (str,  UVM_ALL_ON)
+  //`uvm_object_utils_end
 
   //-----------------------------------------------
   //             CONSTRAINT
@@ -111,10 +120,13 @@ endfunction
 function void nvme_cmd::create_data(string dp = "INCR");
 
   data = new[host_tdata_size];
+  `uvm_info(get_name(), $sformatf("host_tdata_size = %0d", host_tdata_size), UVM_LOW) 
   case(dp)
     "INCR":begin
-	     for(int i = 0; i < host_tdata_size; i++)
+	     for(int i = 0; i < host_tdata_size; i++)begin
                data[i] = i; 
+               `uvm_info(get_name(), $sformatf(" data[%0h] = %0h", i, data[i]), UVM_LOW) 
+             end
            end
   endcase
 endfunction

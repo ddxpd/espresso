@@ -38,7 +38,6 @@ interface host_intf();
     data_temp = new[size];
     foreach(data[i])begin
       data_temp[i] = data[i];
-      $display("data_temp[%0h] = %0h", i, data_temp[i]);
     end
     host_mem.fill_dw_data_group_direct(addr, data_temp);
   endfunction
@@ -69,12 +68,12 @@ interface host_intf();
   
   
   function automatic void take_byte_data_group_direct(U64 addr, ref U8 data[]);
-    U8   data_temp[];
-    int  size = data.size();
-    data_temp = new[size];
-    foreach(data[i])
-      data_temp[i] = data[i];
-    host_mem.take_byte_data_group_direct(addr, data_temp);
+    //U8   data_temp[];
+    //int  size = data.size();
+    //data_temp = new[size];
+    //foreach(data[i])
+    //  data_temp[i] = data[i];
+    host_mem.take_byte_data_group_direct(addr, data);
   endfunction
   
   
@@ -83,9 +82,9 @@ interface host_intf();
     U32  data_temp[];
     int  size = data.size();
     data_temp = new[size];
-    foreach(data[i])
-      data_temp[i] = data[i];
     host_mem.take_dw_data_group_direct(addr, data_temp);
+    foreach(data[i])
+      data[i] = data_temp[i];
   endfunction
 
 endinterface
