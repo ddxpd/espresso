@@ -5,8 +5,10 @@ class nvme_function_manager extends uvm_object;
   
   //subq   sub_q[int];
 
+  int    fid;
   int    num_sq_support;
   int    num_cq_support; 
+  nvme_namespace  active_ns[U32];    // KEY is namespace id
 
   extern function new(string name="nvme_function_manager");
 

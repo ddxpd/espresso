@@ -18,9 +18,15 @@ class esp_host extends uvm_component;
   U16            sq_tail_ptr;
 
 
+  nvme_function_manager    mgrs[U32];     // KEY is function id
+
+
   extern function        new(string name="esp_host", uvm_component parent); 
-  extern task            post_cmd(ref nvme_cmd cmd);
   extern task            main_phase(uvm_phase phase);
+
+  extern task            post_cmd(nvme_function_manager mgr = null, ref nvme_cmd cmd);
+  extern function        pick_rand_mgr(ref nvme_cmd cmd);
+ 
   extern function        calculate_cmd_size();
   extern function        malloc_memory_space(nvme_cmd cmd);
   extern function        fill_data_to_host_mem(nvme_cmd cmd);
@@ -37,12 +43,30 @@ endclass
 
 function esp_host::new(string name="esp_host", uvm_component parent);
   super.new(name, parent);
+  nvme_namespace         ns;
+  
+  nvme_function_manager  func_mgr;
+  func_mgr = nvme_function_manager::type_id::create("func_mgr");  //TODO name should be execlsively
+  func_mgr.fid = 1;
+  
+  ns = nvme_namespace::type_id::create("ns");
+  ns.lba_data_size  = 4096;
+  ns.meta_data_size = 16;
+  ns.nsid = 1;
+  func_mgr.active_ns[ns.nsid] = ns;
+  mgrs[func_mgr.fid] = func_mgr;
 endfunction
 
 
 
-task esp_host::post_cmd(ref nvme_cmd cmd);
+task esp_host::post_cmd(nvme_function_manager mgr = null, ref nvme_cmd cmd);
 
+  if(mgr == null)begin
+    pick_rand_mgr(cmd);
+  end
+  else
+    cmd.mgr = mgr;
+  end
   //SQE_DW is not packed yet
   cmd.process_self_stage_0();
   //check which Q the cmd belongs to
@@ -88,6 +112,19 @@ endtask
 function esp_host::calculate_cmd_size();
 
 endfunction
+
+
+function esp_host::pick_rand_mgr(ref nvme_cmd cmd);
+  nvme_function_manager   mgr_q[$];
+  if(mgrs.size() == 0)
+    `uvm_error(get_name(), $sformatf("There is no function manager could be chosen."))
+ 
+  foreach(mgrs[i])
+    mgr_q.push_back(mgrs[i]);
+  mgr_q.shuffle();
+  cmd.mgr = mgr_q[0];
+endfunction
+
 
 
 function esp_host::malloc_memory_space(nvme_cmd cmd);
