@@ -159,7 +159,7 @@ class ParseTableFromPDF():
       self.print_error("{} does not exist. Please check file path.".format(fpath))
     self.csv_folder = "../doc/csv"
     self.pages = fitz.open(fpath)
-    self.page_ranges = [[393, 393]]
+    self.page_ranges = [[61, 61]]
     self.pages_to_detect = []
     self.current_page = 0
     #self.pages_to_detect = [74]
@@ -177,5 +177,5 @@ class ParseTableFromPDF():
     os.system("rm ../doc/csv/*.csv")
     self.sub_tbl_cnt = 0
 
-nvme_base_spec = ParseTableFromPDF("../doc/nvme_protocol/NVM-Express-Base-Specification-Revision-2.1-2024.08.05-Ratified.pdf")
+nvme_base_spec = ParseTableFromPDF("../doc/nvme_protocol/NVM-Express-NVM-Command-Set-Specification-Revision-1.1-2024.08.05-Ratified.pdf")
 nvme_base_spec.extract_table()
