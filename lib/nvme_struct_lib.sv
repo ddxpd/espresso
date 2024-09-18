@@ -735,6 +735,9 @@ typedef union {
   S_DELETE_IOCQ_DWORD_10              delete_iocq;
   S_DELETE_IOSQ_DWORD_10              delete_iosq;
   S_VIRTUAL_MNGR_DWORD_10             virtual_mngr;
+  S_CMD_SANITIZE_DWORD_10             sanitize;
+  S_CMD_TRACK_RCV_DWORD_10            track_rcv;
+  S_CMD_TRACK_SEND_DWORD_10           track_send;
 } S_ACMD_DWORD_10;
 
 
@@ -757,6 +760,9 @@ typedef union {
   S_CREATE_IOCQ_DWORD_11                 create_iocq;
   S_CREATE_IOSQ_DWORD_11                 create_iosq;
   S_VIRTUAL_MNGR_DWORD_11                virtual_mngr;
+  S_CMD_SANITIZE_DWORD_11                sanitize;
+  S_CMD_TRACK_RCV_DWORD_11               track_rcv;
+  S_CMD_TRACK_SEND_DWORD_11              track_send;
 } S_ACMD_DWORD_11;
 
 
@@ -765,7 +771,8 @@ typedef union {
   S_CMD_CREATE_CTLRER_DATA_Q_DWORD_12 create_ctrler_data_q;
   S_CMD_GET_LOG_PAGE_DWORD_12         get_logpage;
   S_CMD_MIGRATION_RCV_12              migration_rcv;
-  S_CREATE_IOSQ_DWORD_12                 create_iosq;
+  S_CREATE_IOSQ_DWORD_12              create_iosq;
+  S_CMD_TRACK_RCV_DWORD_12            track_rcv;
 } S_ACMD_DWORD_12;
 
 
@@ -794,6 +801,8 @@ typedef union {
 
 
 /************ IO Command ************/
+
+
 typedef struct packed {
   bit [31:16] CID; // Command Identifier 
   bit [15:00] SQID; // Submission Queue Identifier 
@@ -1219,6 +1228,94 @@ typedef struct packed {
   bit [15:00] LBAT; // Logical Block Application Tag 
 } S_WRITE_ZEROES_DWORD_15;
 
+typedef union {
+  S_COMPARE_DWORD_2               compare;
+  S_COPY_DWORD_2                  copy;
+  S_READ_DWORD_2                  read;
+  S_VERIFY_DWORD_2                verify;
+  S_WRITE_DWORD_2                 write;
+  S_WRITE_ZEROES_DWORD_2          write_zeroes;
+} S_IOCMD_DWORD_2;
+
+typedef union {
+  S_COMPARE_DWORD_3               compare; 
+  S_COPY_DWORD_3                  copy;
+  S_READ_DWORD_3                  read;
+  S_VERIFY_DWORD_3                verify;
+  S_WRITE_DWORD_3                 write;
+  S_WRITE_ZEROES_DWORD_3          write_zeroes;
+} S_IOCMD_DWORD_3;
+
+
+typedef union {
+  S_CANCEL_DWORD_10               cancel;
+  S_IO_MANAGEMENT_RCV_DWORD_10    io_mng_rcv;
+  S_IO_MANAGEMENT_SEND_DWORD_10   io_mng_send;
+  S_RESERVATION_ACQUIRE_DWORD_10  rsv_acq;
+  S_RESERVATION_REGISTER_DWORD_10 rsv_reg;
+  S_RESERVATION_RELEASE_DWORD_10  rsv_rls;
+  S_RESERVATION_REPORT_DWORD_10   rsv_report;
+  S_COMPARE_DWORD_10              compare;
+  S_COPY_DWORD_10                 copy;
+  S_DATASET_MNGMENT_DWORD_10      dataset_mng;
+  S_READ_DWORD_10                 read;
+  S_VERIFY_DWORD_10               verify;
+  S_WRITE_DWORD_10                write;
+  S_WRITE_UNCOR_DWORD_10          write_uncor;
+} S_IOCMD_DWORD_10;
+
+typedef union {
+  S_CANCEL_DWORD_11               cancel;
+  S_IO_MANAGEMENT_RCV_DWORD_11    io_mng_rcv;
+  S_RESERVATION_REPORT_DWORD_11   rsv_report;
+  S_COMPARE_DWORD_11              compare;
+  S_COPY_DWORD_11                 copy;
+  S_DATASET_MNGMENT_DWORD_11      dataset_mng;
+  S_READ_DWORD_11                 read;
+  S_VERIFY_DWORD_11               verify;
+  S_WRITE_DWORD_11                write;
+  S_WRITE_UNCOR_DWORD_11          write_uncor;
+} S_IOCMD_DWORD_11;
+
+typedef union {
+  S_COMPARE_DWORD_12              compare;
+  S_COPY_DWORD_12                 copy;
+  S_READ_DWORD_12                 read;
+  S_VERIFY_DWORD_12               verify;
+  S_WRITE_DWORD_12                write;
+  S_WRITE_UNCOR_DWORD_12          write_uncor;
+} S_IOCMD_DWORD_12;
+
+typedef union {
+  S_COMPARE_DWORD_13                    compare;
+  S_COPY_DWORD_13                       copy;
+  S_READ_CTYPE0_DWORD_13                read_ctype0;
+  S_READ_CTYPE_NON0_DWORD_13            read_ctype_non0;
+  S_VERIFY_DWORD_13                     verify;
+  S_WRITE_CTYPE0_DWORD_13               write_ctype0;
+  S_WRITE_CTYPE_NON0_DWORD_13           write_ctype_non0;
+  S_WRITE_UNCOR_DWORD_13                write_uncor;
+  S_WRITE_ZEROES_CETYPE0_DWORD_13       write_zeroes_ctype0;
+  S_WRITE_ZEROES_CETYPE_NON0_DWORD_13   write_zeroes_ctype_non0;
+} S_IOCMD_DWORD_13;
+
+typedef union {
+  S_COMPARE_DWORD_14                    compare;
+  S_COPY_DWORD_14                       copy;
+  S_READ_DWORD_14                       read;
+  S_VERIFY_DWORD_14                     verify;
+  S_WRITE_DWORD_14                      write;
+  S_WRITE_ZEROES_DWORD_14               write_zeroes;
+} S_IOCMD_DWORD_14;
+
+typedef union {
+  S_COMPARE_DWORD_15                    compare;
+  S_COPY_DWORD_15                       copy;
+  S_READ_DWORD_15                       read;
+  S_VERIFY_DWORD_15                     verify;
+  S_WRITE_DWORD_15                      write;
+  S_WRITE_ZEROES_DWORD_15               write_zeroes;
+} S_IOCMD_DWORD_15;
 
 /************NVME COMPLETION FORMAT************/
 typedef struct packed {

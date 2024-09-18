@@ -44,6 +44,29 @@ class nvme_cmd extends uvm_object;
        //int         usr_mptr;
        int         usr_nlb      = -1;
 
+       //nvme_struct_lib.sv
+       S_CMD_DWORD_0       sdw0;
+       S_CMD_DWORD_1       sdw1;
+       //DW2 and DW3 are command specific
+       S_IOCMD_DWORD_2     sdw2_io;
+       S_IOCMD_DWORD_3     sdw3_io;
+       S_CMD_DWORD_4_5     smptr;
+       S_CMD_DWORD_6_7     sprp1;
+       S_CMD_DWORD_8_9     sprp2;
+       S_ACMD_DWORD_10     sdw10_adm;
+       S_ACMD_DWORD_11     sdw11_adm;
+       S_ACMD_DWORD_12     sdw12_adm;
+       S_ACMD_DWORD_13     sdw13_adm;
+       S_ACMD_DWORD_14     sdw14_adm;
+       S_ACMD_DWORD_15     sdw15_adm;
+       S_IOCMD_DWORD_10    sdw10_io;
+       S_IOCMD_DWORD_11    sdw11_io;
+       S_IOCMD_DWORD_12    sdw12_io;
+       S_IOCMD_DWORD_13    sdw13_io;
+       S_IOCMD_DWORD_14    sdw14_io;
+       S_IOCMD_DWORD_15    sdw15_io;
+
+
   `uvm_object_utils(nvme_cmd)
 
   //`uvm_object_utils_begin(nvme_cmd)

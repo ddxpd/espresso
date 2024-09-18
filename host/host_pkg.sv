@@ -4,6 +4,7 @@ package host_pkg;
   import misc_pkg::*;
   import bfm_pkg::*;
   import host_mem_pkg::*;
+  import nvme_trans_lib_pkg::*;
 
   `include "base_q.svh"
   `include "nvme_mgr.svh"
