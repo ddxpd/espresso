@@ -738,6 +738,7 @@ typedef union {
   S_CMD_SANITIZE_DWORD_10             sanitize;
   S_CMD_TRACK_RCV_DWORD_10            track_rcv;
   S_CMD_TRACK_SEND_DWORD_10           track_send;
+  U32                                 dw;
 } S_ACMD_DWORD_10;
 
 
@@ -763,6 +764,7 @@ typedef union {
   S_CMD_SANITIZE_DWORD_11                sanitize;
   S_CMD_TRACK_RCV_DWORD_11               track_rcv;
   S_CMD_TRACK_SEND_DWORD_11              track_send;
+  U32                                    dw;
 } S_ACMD_DWORD_11;
 
 
@@ -773,12 +775,14 @@ typedef union {
   S_CMD_MIGRATION_RCV_12              migration_rcv;
   S_CREATE_IOSQ_DWORD_12              create_iosq;
   S_CMD_TRACK_RCV_DWORD_12            track_rcv;
+  U32                                 dw;
 } S_ACMD_DWORD_12;
 
 
 typedef union {
   S_CMD_GET_LOG_PAGE_DWORD_13         get_logpage;
   S_CMD_MIGRATION_RCV_13              migration_rcv;
+  U32                                 dw;
 } S_ACMD_DWORD_13;
 
 
@@ -790,6 +794,7 @@ typedef union {
   S_CMD_MIGRATION_RCV_14              migration_rcv;
   S_CMD_MIGRATION_SEND_14             migration_send;
   S_CMD_SET_FEATURE_DWORD_14          set_feature;
+  U32                                 dw;
 } S_ACMD_DWORD_14;
 
 
@@ -797,6 +802,7 @@ typedef union {
   S_CMD_DEVICE_SELF_TEST_DWORD_15     device_self_test;
   S_CMD_MIGRATION_RCV_15              migration_rcv;
   S_CMD_SET_CTLR_STATE_DWORD_15       set_ctrl_state;
+  U32                                 dw;
 } S_ACMD_DWORD_15;
 
 
@@ -1235,6 +1241,7 @@ typedef union {
   S_VERIFY_DWORD_2                verify;
   S_WRITE_DWORD_2                 write;
   S_WRITE_ZEROES_DWORD_2          write_zeroes;
+  U32                             dw;
 } S_IOCMD_DWORD_2;
 
 typedef union {
@@ -1244,6 +1251,7 @@ typedef union {
   S_VERIFY_DWORD_3                verify;
   S_WRITE_DWORD_3                 write;
   S_WRITE_ZEROES_DWORD_3          write_zeroes;
+  U32                             dw;
 } S_IOCMD_DWORD_3;
 
 
@@ -1262,6 +1270,7 @@ typedef union {
   S_VERIFY_DWORD_10               verify;
   S_WRITE_DWORD_10                write;
   S_WRITE_UNCOR_DWORD_10          write_uncor;
+  U32                             dw;
 } S_IOCMD_DWORD_10;
 
 typedef union {
@@ -1275,6 +1284,7 @@ typedef union {
   S_VERIFY_DWORD_11               verify;
   S_WRITE_DWORD_11                write;
   S_WRITE_UNCOR_DWORD_11          write_uncor;
+  U32                             dw;
 } S_IOCMD_DWORD_11;
 
 typedef union {
@@ -1284,6 +1294,7 @@ typedef union {
   S_VERIFY_DWORD_12               verify;
   S_WRITE_DWORD_12                write;
   S_WRITE_UNCOR_DWORD_12          write_uncor;
+  U32                             dw;
 } S_IOCMD_DWORD_12;
 
 typedef union {
@@ -1297,6 +1308,7 @@ typedef union {
   S_WRITE_UNCOR_DWORD_13                write_uncor;
   S_WRITE_ZEROES_CETYPE0_DWORD_13       write_zeroes_ctype0;
   S_WRITE_ZEROES_CETYPE_NON0_DWORD_13   write_zeroes_ctype_non0;
+  U32                                   dw;
 } S_IOCMD_DWORD_13;
 
 typedef union {
@@ -1306,6 +1318,7 @@ typedef union {
   S_VERIFY_DWORD_14                     verify;
   S_WRITE_DWORD_14                      write;
   S_WRITE_ZEROES_DWORD_14               write_zeroes;
+  U32                                   dw;
 } S_IOCMD_DWORD_14;
 
 typedef union {
@@ -1315,6 +1328,7 @@ typedef union {
   S_VERIFY_DWORD_15                     verify;
   S_WRITE_DWORD_15                      write;
   S_WRITE_ZEROES_DWORD_15               write_zeroes;
+  U32                                   dw;
 } S_IOCMD_DWORD_15;
 
 /************NVME COMPLETION FORMAT************/

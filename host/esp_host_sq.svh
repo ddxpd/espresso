@@ -28,6 +28,7 @@ class esp_host_sq extends uvm_object;
   extern function bit check_if_q_full();
   extern function bit incr_wptr();
   extern function void fill_sq_mem(nvme_cmd cmd);
+  extern task push_sqe(nvme_cmd cmd);
 endclass
 
 function esp_host_sq::new(string name="esp_host_sq");
@@ -108,3 +109,18 @@ function void esp_host_sq::fill_sq_mem(nvme_cmd cmd);
     host_mem.fill_dw_data_group_direct(prp, cmd.SQE_DW);
   end
 endfunction
+
+
+task esp_host_sq::push_sqe(nvme_cmd cmd);
+  bit q_full, suc;
+  do begin
+    q_full = check_if_q_full();
+    #1; //1 time unit
+  end while (q_full == 1);
+
+  suc = incr_wptr();
+  if (suc == 0) `uvm_error(get_name(), $sformatf("SQ 0x%0x is still full. wptr is at 0x%0x, rptr is at 0x%0x", qid, wptr, rptr))
+
+  fill_sq_mem(cmd);
+endtask
+
