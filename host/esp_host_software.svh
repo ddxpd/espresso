@@ -6,7 +6,7 @@ class esp_host extends uvm_component;
   nvme_dut       DUT;
   nvme_cmd       cmd_waiting_q[$];
   host_vif       hvif;
-  nvme_cmd       host_cmd_map[int];
+  nvme_cmd       host_cmd_map[int];     //KEY is unique ID
 
   int            cur_phase_bit;
   U64            cq_base_addr = 'h5_0000;
@@ -16,6 +16,9 @@ class esp_host extends uvm_component;
   U64            sq_base_addr = 'h6_0000;
   U16            sq_head_ptr; 
   U16            sq_tail_ptr;
+
+  //For temp
+  int            msix_2_func[U64];   
 
 
   nvme_function_manager    mgrs[U32];     // KEY is function id
@@ -35,6 +38,9 @@ class esp_host extends uvm_component;
   extern task            forever_monitor_interrupt();
   extern function int    get_cq_tail();
   extern task            get_one_cqe(ref nvme_cpl_entry nvme_cpl);
+  
+     
+  extern function int    find_related_cmd(fid, sqid, cid); 
 
 
 endclass
@@ -55,6 +61,8 @@ function esp_host::new(string name="esp_host", uvm_component parent);
   ns.nsid = 1;
   func_mgr.active_ns[ns.nsid] = ns;
   mgrs[func_mgr.fid] = func_mgr;
+
+  msix_2_func['h00000001] = 'h1;
 endfunction
 
 
@@ -210,19 +218,35 @@ endtask
 task esp_host::forever_monitor_interrupt();
   nvme_cpl_entry   nvme_cpl;
   bit              suc;
+  int              fid, sqid, cid;
+  int              uid;
+  bit[15:0]        status;
+  
+
   forever begin
     `uvm_info(get_name(), $sformatf("start to wait MSIX"), UVM_LOW) 
     wait(hvif.msix_intr_happens == 1);
+    
+
+    //fid = get_intr_func();
     `uvm_info(get_name(), $sformatf("msix_intr_happens"), UVM_LOW)
     //got the corresponding IV
+    
     cq_tail_ptr = get_cq_tail(); //TODO check the phase bit in CQE
     do begin
       nvme_cpl = nvme_cpl_entry::type_id::create("nvme_cpl");
       get_one_cqe(nvme_cpl);
       //suc = do_host_cpl_compare();
-      suc = 1;
+      
+       
+      suc  = 1;
       if(suc)begin
-        host_cmd_map[1].state = CMD_DONE;
+        status = nvme_cpl.get_status();
+        sqid = nvme_cpl.get_sqid();
+        cid  = nvme_cpl.get_cid();
+        uid  = find_related_cmd(fid, sqid, cid);
+        process_cmd_when_completion(uid, status);
+        host_cmd_map[uid].state = CMD_DONE;
         `uvm_info(get_name(), "******************INIT_TEST PASS******************", UVM_NONE)
       end
     end while(cq_tail_ptr != cq_head_ptr);  
@@ -277,3 +301,73 @@ endtask
 
 
 
+function int esp_host::find_related_cmd(int fid, int sqid, int cid);
+  int  q[$];
+  
+  q = host_cmd_map.find_index(x) with (x.fid == fid && x.sqid == sqid && x.cid == cid && x.state != CMD_DONE);
+  if(q.size == 1)
+    return q[0];
+  else if(q.size() == 0)begin
+    `uvm_error(get_name(), $sformatf("Not find any matched cmd {fid, sqid, cid} = {%0h,%0h,%0h}", fid, sqid, cid)) 
+    return -1;
+  end
+  else begin
+    `uvm_error(get_name(), $sformatf("Find %0d matched cmd {fid, sqid, cid} = {%0h,%0h,%0h}", fid, sqid, cid)) 
+    return -1;
+  end
+endfunction
+
+
+
+function esp_host::process_cmd_when_completion(int uid, bit[14:0] status);
+  nvme_cmd    cmd;
+  
+  cmd = host_cmd_map[uid];
+  host_cmd_map[uid].status = status;
+  if(cmd.status == 'h0)begin  //TODO
+    case({cmd.is_admin, cmd.opc})
+      {ADMIN_CMD, NVME_IDENTIFY}:
+         begin
+           pwc_admin_indentify(uid);
+         end
+      //{}:begin
+      //   end
+      //{}:begin
+      //   end
+      //{}:begin
+      //   end
+
+    endcase
+    
+  end
+
+  
+endfunction
+
+
+
+function esp_host::pwc_admin_indentify(int uid);
+  
+  case(host_cmd_map[uid].cns)
+    NS_DATA:begin
+              pwc_identify_cns_0(uid);
+            end
+   
+  endcase
+endfunction
+
+
+
+function esp_host::pwc_identify_cns_0(int uid);
+  nvme_cmd    cmd;
+  int         data_size;
+  int         data_addr;
+
+
+  cmd = host_cmd_map[uid];
+  data_addr = cmd.
+  
+  
+  host_mem.take_dw_data_group_direct(addr, data);   
+  
+endfunction

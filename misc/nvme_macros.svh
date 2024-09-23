@@ -16,6 +16,15 @@ typedef enum U8 {
   NVME_READ      = 'h2
 } IO_OPC_E;
 
+typedef enum U8 {
+  NVME_IDENTIFY  = 'h6
+} ADMIN_OPC_E;
+
+
+typedef enum U8 {
+  NS_DATA        = 'h0
+} INENITFY_CNS_E;
+
 
 typedef enum bit[1:0] {
   NVME_PRP       = 'h0,
@@ -29,3 +38,9 @@ typedef enum U8 {
   CMD_DONE        = 'h1,
   CMD_UNFINISH    = 'h2
 } CMD_STAT_E;
+
+
+typedef enum bit {
+  IO_CMD        = 'h0,
+  ADMIN_CMD     = 'h1
+} CMD_TYPE_E;

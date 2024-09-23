@@ -6,7 +6,8 @@ class nvme_cmd extends uvm_object;
        U32         SQE_DW[];
        CMD_STAT_E  state;
 
-  rand IO_OPC_E    opc;
+  rand U8          opc;
+       int         fid;
   rand U16         sqid;
   rand U16         cqid;
   rand U16         cid;
@@ -30,6 +31,9 @@ class nvme_cmd extends uvm_object;
        int         udata_size;    //Only used by IO cmd
        int         mdata_size;    //Only used by IO cmd
        bit         is_admin;
+
+  //For temp
+       INENITFY_CNS_E  cns;
 
   
   //-----------------------------------------------
