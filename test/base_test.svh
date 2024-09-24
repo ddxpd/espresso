@@ -53,9 +53,13 @@ task base_test::main_phase(uvm_phase phase);
   fork
     begin
       cmd = nvme_cmd::type_id::create("cmd", this);
-      cmd.sqid = 1;
-      cmd.opc = NVME_WRITE;
+      if(!cmd.randomize with {
+        cmd.esp_opc   == ESP_WRITE;
+	cmd.sqid      == 1;
+	cmd.nlb       == 1;
+      }) `uvm_error(get_name(), $sformatf("cmd randomize failed!")) 
       host.post_cmd(cmd); 
+
       num_cmd_send++;
       cmd_q.push_back(cmd);
       #3000ns;

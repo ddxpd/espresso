@@ -4,6 +4,8 @@ class nvme_namespace extends uvm_object;
   //bit [7:0]     num_lba;          // Number of LBA Formats (NLBAF)
   bit [7:0]     lba_data_size;    //LBA Data Size (LBADS)
   bit [15:0]    meta_data_size;   //Metadata Size (MS)
+
+  bit           is_active;
       
 
   `uvm_object_utils(nvme_namespace)

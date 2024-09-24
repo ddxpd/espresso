@@ -11,6 +11,16 @@ typedef bit[15:0]   U16;
 typedef bit[ 7:0]   U8;
 
 
+typedef enum bit[8:0] {
+  ESP_WRITE        = 'h1,
+  ESP_READ         = 'h2,
+
+  ESP_IDENTIFY     = 'h106
+
+} ESP_OPC_E;
+
+
+
 typedef enum U8 {
   NVME_WRITE     = 'h1,
   NVME_READ      = 'h2

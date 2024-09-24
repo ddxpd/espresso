@@ -75,40 +75,48 @@ task esp_host::post_cmd(nvme_function_manager mgr = null, ref nvme_cmd cmd);
   else
     cmd.mgr = mgr;
   end
+
   //SQE_DW is not packed yet
-  cmd.process_self_stage_0();
+  cmd.stage_0_process_user_ctrl();
+  cmd.stage_1_basic_process();
+  cmd.stage_2_fill_sqe();
+  cmd.stage_3_detail_process();
   //check which Q the cmd belongs to
+  
+  if(cmd.if_has_data())begin
+    malloc_memory_space(cmd);
+    fill_data_to_host_mem(cmd);
+  end
+
+  fill_cmd_to_SQ(cmd);
+  ring_doorbell(cmd, cmd.mgr);
+  host_cmd_map[cmd.uid] = cmd;
 
  
+  //TODO should be a case branch instead of 'if-else'
 
-  if(!cmd.is_admin_cmd() && cmd.opc == NVME_WRITE)begin
-    int nsid = cmd.SQE_DW[1];
-    int nlb  = cmd.SQE_DW[12][15:0];
-    //calculate the cmd size
-    //...
-    cmd.uid = 1; 
-    cmd.host_tdata_size = 64;
-    cmd.create_data();
-    //host assign the host memory space to the data and return DSPT
-    malloc_memory_space(cmd);
-    //malloc host memory for PRP List
-    //fill PRP List or SGL DSPT to host memory
 
-    //fill data to host mem
-    fill_data_to_host_mem(cmd); 
-    
-    
-    //check if the corresponding SQ has enough space to put the cmd
-    //When PRP and SGL is ready, put the cmd to related SQ
-    fill_cmd_to_SQ(cmd);
-    ring_doorbell(cmd, cmd.mgr);
-    //cmd_waiting_q.push_back(cmd);
-    host_cmd_map[cmd.uid] = cmd;
+  if(!cmd.if_is_admin() && cmd.opc == NVME_WRITE)begin
+    ////host assign the host memory space to the data and return DSPT
+    //
+    ////malloc host memory for PRP List
+    ////fill PRP List or SGL DSPT to host memory
+
+    ////fill data to host mem
+    //fill_data_to_host_mem(cmd); 
+    //
+    //
+    ////check if the corresponding SQ has enough space to put the cmd
+    ////When PRP and SGL is ready, put the cmd to related SQ
+    //fill_cmd_to_SQ(cmd);
+    //ring_doorbell(cmd, cmd.mgr);
+    ////cmd_waiting_q.push_back(cmd);
+    //host_cmd_map[cmd.uid] = cmd;
   end
 
 
   //Create SQ
-  if( cmd.is_admin_cmd() && cmd.SQE_DW[0][7:0] == 'h01)begin  
+  if( cmd.if_is_admin() && cmd.SQE_DW[0][7:0] == 'h01)begin  
     int nsid = cmd.SQE_DW[1];
     int nlb  = cmd.SQE_DW[12][15:0];
   end
@@ -360,14 +368,30 @@ endfunction
 
 function esp_host::pwc_identify_cns_0(int uid);
   nvme_cmd    cmd;
+  U8          data[];
   int         data_size;
   int         data_addr;
+  U32         nsid;
+  int         fid;
+
+  data = new[4096];
+
+  cmd          = host_cmd_map[uid];
+  data_addr    = cmd.get_prp1();
+  nsid         = cmd.nsid;
+  fid          = cmd.get_fid();
+  
+  host_mem.take_byte_data_group_direct(data_addr, data);   
+
+  //TODO lots of field
+  mgrs[fid].active_ns[nsid].lba_data_size = data[130];
+  mgrs[fid].active_ns[nsid].meta_data_size = data[129:128];
+
+  
+endfunction
 
 
-  cmd = host_cmd_map[uid];
-  data_addr = cmd.
-  
-  
-  host_mem.take_dw_data_group_direct(addr, data);   
+
+function esp_host::get_intr_func();
   
 endfunction
