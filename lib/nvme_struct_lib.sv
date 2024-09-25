@@ -237,6 +237,7 @@ typedef struct packed {
 
 
 /************NVME CMD FORMAT************/
+/************ Admin Command ************/
 typedef struct packed {
   bit [31:16] CID; // Command Identifier
   bit [15:00] SQID; // Submission Queue Identifier
@@ -617,6 +618,67 @@ typedef struct packed {
 
 
 typedef struct packed {
+  bit [31:16] QSIZE; // Queue Size 
+  bit [15:00] QID; // Queue Identifier 
+} S_CREATE_IOCQ_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] IV; // Interrupt Vector 
+  bit [15:02] RSVD0; //
+  bit [01:01] IEN; // Interrupts Enabled 
+  bit [00:00] PC; // Physically Contiguous 
+} S_CREATE_IOCQ_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:16] QSIZE; // Queue Size 
+  bit [15:00] QID; // Queue Identifier 
+} S_CREATE_IOSQ_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] CQID; // Completion Queue Identifier 
+  bit [15:03] RSVD; //
+  bit [02:01] QPRIO; // Queue Priority
+  bit [00:00] PC; // Physically Contiguous
+} S_CREATE_IOSQ_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:16] RSVD; //
+  bit [15:00] NVMSETID; // NVM Set Identifier
+} S_CREATE_IOSQ_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:16] RSVD; //
+  bit [15:00] QID; // Queue Identifier 
+} S_DELETE_IOCQ_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] RSVD; //
+  bit [15:00] QID; // Queue Identifier 
+} S_DELETE_IOSQ_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] CNTLID; // Controller Identifier 
+  bit [15:11] RSVD0; //
+  bit [10:08] RT; // Resource Type
+  bit [07:04] RSVD; //
+  bit [03:00] ACT; // Action
+} S_VIRTUAL_MNGR_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] RSVD; //
+  bit [15:00] NR; // Number of Controller Resources) 
+} S_VIRTUAL_MNGR_DWORD_11;
+
+
+typedef struct packed {
   bit [31:16] CID; // Command Identifier
   bit [15:14] PSDT; // PRP or SGL for Data Transfer
   bit [13:10] RSVD0; //
@@ -668,7 +730,16 @@ typedef union {
   S_CMD_SECURITY_RCV_DWORD_10         security_rcv;
   S_CMD_SECURITY_SEND_DWORD_10        security_send;
   S_CMD_SET_FEATURE_DWORD_10          set_feature;
-} S_CMD_DWORD_10;
+  S_CREATE_IOCQ_DWORD_10              create_iocq;
+  S_CREATE_IOSQ_DWORD_10              create_iosq;
+  S_DELETE_IOCQ_DWORD_10              delete_iocq;
+  S_DELETE_IOSQ_DWORD_10              delete_iosq;
+  S_VIRTUAL_MNGR_DWORD_10             virtual_mngr;
+  S_CMD_SANITIZE_DWORD_10             sanitize;
+  S_CMD_TRACK_RCV_DWORD_10            track_rcv;
+  S_CMD_TRACK_SEND_DWORD_10           track_send;
+  U32                                 dw;
+} S_ACMD_DWORD_10;
 
 
 typedef union {
@@ -687,7 +758,14 @@ typedef union {
   S_CMD_NS_MANAGEMENT_DWORD_11           ns_management;
   S_CMD_SECURITY_RCV_DWORD_11            security_rcv;
   S_CMD_SECURITY_SEND_DWORD_11           security_send;
-} S_CMD_DWORD_11;
+  S_CREATE_IOCQ_DWORD_11                 create_iocq;
+  S_CREATE_IOSQ_DWORD_11                 create_iosq;
+  S_VIRTUAL_MNGR_DWORD_11                virtual_mngr;
+  S_CMD_SANITIZE_DWORD_11                sanitize;
+  S_CMD_TRACK_RCV_DWORD_11               track_rcv;
+  S_CMD_TRACK_SEND_DWORD_11              track_send;
+  U32                                    dw;
+} S_ACMD_DWORD_11;
 
 
 typedef union {
@@ -695,13 +773,17 @@ typedef union {
   S_CMD_CREATE_CTLRER_DATA_Q_DWORD_12 create_ctrler_data_q;
   S_CMD_GET_LOG_PAGE_DWORD_12         get_logpage;
   S_CMD_MIGRATION_RCV_12              migration_rcv;
-} S_CMD_DWORD_12;
+  S_CREATE_IOSQ_DWORD_12              create_iosq;
+  S_CMD_TRACK_RCV_DWORD_12            track_rcv;
+  U32                                 dw;
+} S_ACMD_DWORD_12;
 
 
 typedef union {
   S_CMD_GET_LOG_PAGE_DWORD_13         get_logpage;
   S_CMD_MIGRATION_RCV_13              migration_rcv;
-} S_CMD_DWORD_13;
+  U32                                 dw;
+} S_ACMD_DWORD_13;
 
 
 typedef union {
@@ -712,15 +794,542 @@ typedef union {
   S_CMD_MIGRATION_RCV_14              migration_rcv;
   S_CMD_MIGRATION_SEND_14             migration_send;
   S_CMD_SET_FEATURE_DWORD_14          set_feature;
-} S_CMD_DWORD_14;
+  U32                                 dw;
+} S_ACMD_DWORD_14;
 
 
 typedef union {
   S_CMD_DEVICE_SELF_TEST_DWORD_15     device_self_test;
   S_CMD_MIGRATION_RCV_15              migration_rcv;
   S_CMD_SET_CTLR_STATE_DWORD_15       set_ctrl_state;
-} S_CMD_DWORD_15;
+  U32                                 dw;
+} S_ACMD_DWORD_15;
 
+
+/************ IO Command ************/
+
+
+typedef struct packed {
+  bit [31:16] CID; // Command Identifier 
+  bit [15:00] SQID; // Submission Queue Identifier 
+} S_CANCEL_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:03] RSVD; // 
+  bit [02:00] ACODE; // Action Code
+} S_CANCEL_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:16] MOS; // Management Operation Specific
+  bit [15:08] RSVD; // Reserved
+  bit [07:00] MO; // Management Operation
+} S_IO_MANAGEMENT_RCV_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] NUMD; // Number of Dwords
+} S_IO_MANAGEMENT_RCV_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:16] MOS; // Management Operation Specific
+  bit [15:08] RSVD; // Reserved
+  bit [07:00] MO; // Management Operation
+} S_IO_MANAGEMENT_SEND_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] RSVD0; //
+  bit [15:08] RTYPE; // Reservation Type
+  bit [07:05] RSVD1; //
+  bit [04:04] DISNSRS; // Dispersed Namespace Reservation Support
+  bit [03:03] IEKEY; // Ignore Existing Key
+  bit [02:00] RACQA; // Reservation Acquire Action
+} S_RESERVATION_ACQUIRE_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:30] CPTPL; // Change Persist Through Power Loss State
+  bit [29:05] RSVD0; // Reserved
+  bit [04:04] DISNSRS; // Dispersed Namespace Reservation Support
+  bit [03:03] IEKEY; // Ignore Existing Key
+  bit [02:00] RREGA; // Reservation Register Action
+} S_RESERVATION_REGISTER_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:16] RSVD0; //
+  bit [15:08] RTYPE; // Reservation Type
+  bit [07:05] RSVD1; //
+  bit [04:04] DISNSRS; // Dispersed Namespace Reservation Support
+  bit [03:03] IEKEY; // Ignore Existing Key
+  bit [02:00] RRELA; // Reservation Release Action
+} S_RESERVATION_RELEASE_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] NUMD; // Number of Dwords
+} S_RESERVATION_REPORT_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:02] RSVD; // Reserved
+  bit [01:01] DISNSRS; // Dispersed Namespace Reservation Support
+  bit [00:00] EDS; //Extended Data Structure
+} S_RESERVATION_REPORT_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:00] ELBTU_LSB; // Expected Logical Block Tags Upper
+} S_COMPARE_DWORD_2;
+
+
+typedef struct packed {
+  bit [31:16] RSVD; // Reserved
+  bit [15:00] ELBTU_MSB; // Expected Logical Block Tags Upper
+} S_COMPARE_DWORD_3;
+
+
+typedef struct packed {
+  bit [31:00] SLBA_LSB; // Starting LBA
+} S_COMPARE_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] SLBA_MSB; // Starting LBA
+} S_COMPARE_DWORD_11;
+
+typedef struct packed {
+  bit [31:31] LR; // Limited Retry (LR)
+  bit [30:30] FUA; // Force Unit Access 
+  bit [29:26] PRINFO; // Protection Information 
+  bit [25:25] RSVD0; //
+  bit [24:24] STC; // Storage Tag Check 
+  bit [23:20] RSVD1; //
+  bit [19:16] CETYPE; // Command Extension Type 
+  bit [15:00] NLB; // Number of Logical Blocks 
+} S_COMPARE_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:16] RSVD0; //
+  bit [15:00] CEV; // Command Extension Value 
+} S_COMPARE_DWORD_13;
+
+
+typedef struct packed {
+  bit [31:00] ELBTL; // Expected Logical Block Tags Lower 
+} S_COMPARE_DWORD_14;
+
+
+typedef struct packed {
+  bit [31:16] ELBATM; // Expected Logical Block Application Tag Mask 
+  bit [15:00] ELBAT; // Expected Logical Block Application Tag 
+} S_COMPARE_DWORD_15;
+
+
+typedef struct packed {
+  bit [31:00] LBTU_LSB; // Logical Block Tags Upper
+} S_COPY_DWORD_2;
+
+
+typedef struct packed {
+  bit [31:16] RSVD; // Reserved
+  bit [15:00] LBTU_MSB; // Logical Block Tags Upper (LBTU)
+} S_COPY_DWORD_3;
+
+
+typedef struct packed {
+  bit [31:00] SDLBA_LSB; // Starting Destination LBA
+} S_COPY_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] SDLBA_MSB; // Starting Destination LBA
+} S_COPY_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:31] LR; // Limited Retry 
+  bit [30:30] FUA; // Force Unit Access 
+  bit [29:26] PRINFOW; // Protection Information Write 
+  bit [25:25] STCR; // Storage Tag Check Read 
+  bit [24:24] STCW; // Storage Tag Check Write 
+  bit [23:20] DTYPE; // Directive Type 
+  bit [19:16] CETYPE; // Command Extension Type 
+  bit [15:12] PRINFOR; // Protection Information Read 
+  bit [11:08] DESFMT; // Descriptor Format 
+  bit [07:00] NR; // Number of Ranges 
+} S_COPY_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:16] DSPEC; // Directive Specific 
+  bit [15:00] CEV; // Command Extension Value 
+} S_COPY_DWORD_13;
+
+
+typedef struct packed {
+  bit [31:00] LBTL; // Logical Block Tags Lower 
+} S_COPY_DWORD_14;
+
+
+typedef struct packed {
+  bit [31:16] LBATM; // Logical Block Application Tag Mask 
+  bit [15:00] LBAT; // Logical Block Application Tag 
+} S_COPY_DWORD_15;
+
+
+typedef struct packed {
+  bit [31:08] RSVD0; //
+  bit [07:00] NR; // Number of Ranges 
+} S_DATASET_MNGMENT_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:03] RSVD0; //
+  bit [02:02] AD; // Attribute – Deallocate 
+  bit [01:01] IDW; // Attribute – Integral Dataset for Write 
+  bit [00:00] IDR; // Attribute – Integral Dataset for Read 
+} S_DATASET_MNGMENT_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:00] ELBTU_LSB; // Expected Logical Block Tags Upper 
+} S_READ_DWORD_2;
+
+
+typedef struct packed {
+  bit [31:16] RSVD0; //
+  bit [15:00] ELBTU_MSB; // Expected Logical Block Tags Upper 
+} S_READ_DWORD_3;
+
+
+typedef struct packed {
+  bit [31:00] SLBA_LSB; // Starting LBA 
+} S_READ_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] SLBA_MSB; // Starting LBA 
+} S_READ_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:31] LR; // Limited Retry 
+  bit [30:30] FUA; // Force Unit Access 
+  bit [29:26] PRINFO; // Protection Information 
+  bit [25:25] RSVD0; //
+  bit [24:24] STC; // Storage Tag Check 
+  bit [23:20] RSVD1; //
+  bit [19:16] CETYPE; // Command Extension Type 
+  bit [15:00] NLB; // Number of Logical Blocks 
+} S_READ_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:08] RSVD0; //
+  bit [07:07] INCPRS; // Incompressible 
+  bit [06:06] SEQREQ; // Sequential Request
+  bit [05:04] AL; // Access Latency
+  bit [03:00] AF; // Access Frequency
+} S_READ_CTYPE0_DWORD_13;
+
+
+typedef struct packed {
+  bit [31:16] RSVD0; //
+  bit [15:00] CEV; // Command Extension Value
+} S_READ_CTYPE_NON0_DWORD_13;
+
+
+typedef struct packed {
+  bit [31:00] ELBTL; // Expected Logical Block Tags Lower 
+} S_READ_DWORD_14;
+
+typedef struct packed {
+  bit [31:16] ELBATM;//Expected Logical Block Application Tag Mask
+  bit [15:00] ELBAT;//Expected Logical Block Application Tag
+} S_READ_DWORD_15;
+
+
+typedef struct packed {
+  bit [31:00] ELBTU_LSB; // Expected Logical Block Tags Upper
+} S_VERIFY_DWORD_2;
+
+
+typedef struct packed {
+  bit [31:16] RSVD; // Reserved
+  bit [15:00] ELBTU_MSB; // Expected Logical Block Tags Upper
+} S_VERIFY_DWORD_3;
+
+
+typedef struct packed {
+  bit [31:00] SLBA_LSB; // Starting LBA 
+} S_VERIFY_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] SLBA_MSB; // Starting LBA 
+} S_VERIFY_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:31] LR; // Limited Retry 
+  bit [30:30] FUA; // Force Unit Access 
+  bit [29:26] PRINFO; // Protection Information 
+  bit [25:25] RSVD0; //
+  bit [24:24] STC; // Storage Tag Check 
+  bit [23:20] RSVD1; //
+  bit [19:16] CETYPE; // Command Extension Type 
+  bit [15:00] NLB; // Number of Logical Blocks 
+} S_VERIFY_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:16] RSVD0; //
+  bit [15:00] CEV; // Command Extention Value 
+} S_VERIFY_DWORD_13;
+
+
+typedef struct packed {
+  bit [31:00] ELBTL; // Expected Logical Block Tags Lower 
+} S_VERIFY_DWORD_14;
+
+
+typedef struct packed {
+  bit [31:16] ELBATM; // Expected Logical Block Application Tag Mask
+  bit [15:00] ELBAT; // Expected Logical Block Application Tag
+} S_VERIFY_DWORD_15;
+
+
+typedef struct packed {
+  bit [31:00] LBTU_LSB; // Logical Block Tags Upper
+} S_WRITE_DWORD_2;
+
+
+typedef struct packed {
+  bit [31:16] RSVD; // Reserved
+  bit [15:00] LBTU_MSB; // Logical Block Tags Upper (LBTU)
+} S_WRITE_DWORD_3;
+
+
+typedef struct packed {
+  bit [31:00] SLBA_LSB; // Starting LBA 
+} S_WRITE_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] SLBA_MSB; // Starting LBA 
+} S_WRITE_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:31] LR; // Limited Retry (LR)
+  bit [30:30] FUA; // Force Unit Access 
+  bit [29:26] PRINFO; // Protection Information 
+  bit [25:25] RSVD0; //
+  bit [24:24] STC; // Storage Tag Check 
+  bit [23:20] DTYPE; // Directive Type
+  bit [19:16] CETYPE; // Command Extension Type 
+  bit [15:00] NLB; // Number of Logical Blocks 
+} S_WRITE_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:16] DSPEC; // Directive Specific 
+  bit [15:08] RSVD; // 
+  bit [07:07] INCPRS; // Incompressible 
+  bit [06:06] SEQREQ; // Sequential Request
+  bit [05:04] AL; // Access Latency
+  bit [03:00] AF; // Access Frequency
+} S_WRITE_CTYPE0_DWORD_13;
+
+
+typedef struct packed {
+  bit [31:16] DSPEC; // Directive Specific (DSPEC)
+  bit [15:00] CEV; // Command Extension Value (CEV)
+} S_WRITE_CTYPE_NON0_DWORD_13;
+
+
+typedef struct packed {
+  bit [31:00] LBTL; // Logical Block Tags Lower 
+} S_WRITE_DWORD_14;
+
+
+typedef struct packed {
+  bit [31:16] LBATM; // Logical Block Application Tag Mask 
+  bit [15:00] LBAT; // Logical Block Application Tag 
+} S_WRITE_DWORD_15;
+
+
+typedef struct packed {
+  bit [31:00] SLBA_LSB; // Starting LBA
+} S_WRITE_UNCOR_DWORD_10;
+
+
+typedef struct packed {
+  bit [31:00] SLBA_MSB; // Starting LBA
+} S_WRITE_UNCOR_DWORD_11;
+
+
+typedef struct packed {
+  bit [31:24] RSVD0; // 
+  bit [23:20] DTYPE; // Directive Type
+  bit [19:16] RSVD1; // 
+  bit [15:00] NLB; // Number of Logical Blocks 
+} S_WRITE_UNCOR_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:16] DSPEC; // Directive Specific
+  bit [15:00] RSVD; // 
+} S_WRITE_UNCOR_DWORD_13;
+
+
+typedef struct packed {
+  bit [31:00] LBTU_LSB; // Logical Block Tags Upper
+} S_WRITE_ZEROES_DWORD_2;
+
+
+typedef struct packed {
+  bit [31:16] RSVD; // Reserved
+  bit [15:00] LBTU_MSB; // Logical Block Tags Upper (LBTU)
+} S_WRITE_ZEROES_DWORD_3;
+
+
+typedef struct packed {
+  bit [31:31] LR; // Limited Retry 
+  bit [30:30] FUA; // Force Unit Access 
+  bit [29:26] PRINFO; // Protection Information 
+  bit [25:25] DEAC; // Deallocate 
+  bit [24:24] STC; // Storage Tag Check 
+  bit [23:23] NSZ; // Namespace Zeroes 
+  bit [22:20] DTYPE; // Directive Type 
+  bit [19:16] CETYPE; // Command Extension Type 
+  bit [15:00] NLB; // Number of Logical Blocks 
+} S_WRITE_ZEROES_DWORD_12;
+
+
+typedef struct packed {
+  bit [31:16] DSPEC; // Directive Specific 
+  bit [15:00] RSVD; //
+} S_WRITE_ZEROES_CETYPE0_DWORD_13;
+
+
+typedef struct packed {
+  bit [31:16] DSPEC; // Directive Specific 
+  bit [15:00] CEV; // Command Extension Value 
+} S_WRITE_ZEROES_CETYPE_NON0_DWORD_13;
+
+
+typedef struct packed {
+  bit [31:00] LBTL; // Logical Block Tags Lower 
+} S_WRITE_ZEROES_DWORD_14;
+
+
+typedef struct packed {
+  bit [31:16] LBATM; // Logical Block Application Tag Mask 
+  bit [15:00] LBAT; // Logical Block Application Tag 
+} S_WRITE_ZEROES_DWORD_15;
+
+typedef union {
+  S_COMPARE_DWORD_2               compare;
+  S_COPY_DWORD_2                  copy;
+  S_READ_DWORD_2                  read;
+  S_VERIFY_DWORD_2                verify;
+  S_WRITE_DWORD_2                 write;
+  S_WRITE_ZEROES_DWORD_2          write_zeroes;
+  U32                             dw;
+} S_IOCMD_DWORD_2;
+
+typedef union {
+  S_COMPARE_DWORD_3               compare; 
+  S_COPY_DWORD_3                  copy;
+  S_READ_DWORD_3                  read;
+  S_VERIFY_DWORD_3                verify;
+  S_WRITE_DWORD_3                 write;
+  S_WRITE_ZEROES_DWORD_3          write_zeroes;
+  U32                             dw;
+} S_IOCMD_DWORD_3;
+
+
+typedef union {
+  S_CANCEL_DWORD_10               cancel;
+  S_IO_MANAGEMENT_RCV_DWORD_10    io_mng_rcv;
+  S_IO_MANAGEMENT_SEND_DWORD_10   io_mng_send;
+  S_RESERVATION_ACQUIRE_DWORD_10  rsv_acq;
+  S_RESERVATION_REGISTER_DWORD_10 rsv_reg;
+  S_RESERVATION_RELEASE_DWORD_10  rsv_rls;
+  S_RESERVATION_REPORT_DWORD_10   rsv_report;
+  S_COMPARE_DWORD_10              compare;
+  S_COPY_DWORD_10                 copy;
+  S_DATASET_MNGMENT_DWORD_10      dataset_mng;
+  S_READ_DWORD_10                 read;
+  S_VERIFY_DWORD_10               verify;
+  S_WRITE_DWORD_10                write;
+  S_WRITE_UNCOR_DWORD_10          write_uncor;
+  U32                             dw;
+} S_IOCMD_DWORD_10;
+
+typedef union {
+  S_CANCEL_DWORD_11               cancel;
+  S_IO_MANAGEMENT_RCV_DWORD_11    io_mng_rcv;
+  S_RESERVATION_REPORT_DWORD_11   rsv_report;
+  S_COMPARE_DWORD_11              compare;
+  S_COPY_DWORD_11                 copy;
+  S_DATASET_MNGMENT_DWORD_11      dataset_mng;
+  S_READ_DWORD_11                 read;
+  S_VERIFY_DWORD_11               verify;
+  S_WRITE_DWORD_11                write;
+  S_WRITE_UNCOR_DWORD_11          write_uncor;
+  U32                             dw;
+} S_IOCMD_DWORD_11;
+
+typedef union {
+  S_COMPARE_DWORD_12              compare;
+  S_COPY_DWORD_12                 copy;
+  S_READ_DWORD_12                 read;
+  S_VERIFY_DWORD_12               verify;
+  S_WRITE_DWORD_12                write;
+  S_WRITE_UNCOR_DWORD_12          write_uncor;
+  U32                             dw;
+} S_IOCMD_DWORD_12;
+
+typedef union {
+  S_COMPARE_DWORD_13                    compare;
+  S_COPY_DWORD_13                       copy;
+  S_READ_CTYPE0_DWORD_13                read_ctype0;
+  S_READ_CTYPE_NON0_DWORD_13            read_ctype_non0;
+  S_VERIFY_DWORD_13                     verify;
+  S_WRITE_CTYPE0_DWORD_13               write_ctype0;
+  S_WRITE_CTYPE_NON0_DWORD_13           write_ctype_non0;
+  S_WRITE_UNCOR_DWORD_13                write_uncor;
+  S_WRITE_ZEROES_CETYPE0_DWORD_13       write_zeroes_ctype0;
+  S_WRITE_ZEROES_CETYPE_NON0_DWORD_13   write_zeroes_ctype_non0;
+  U32                                   dw;
+} S_IOCMD_DWORD_13;
+
+typedef union {
+  S_COMPARE_DWORD_14                    compare;
+  S_COPY_DWORD_14                       copy;
+  S_READ_DWORD_14                       read;
+  S_VERIFY_DWORD_14                     verify;
+  S_WRITE_DWORD_14                      write;
+  S_WRITE_ZEROES_DWORD_14               write_zeroes;
+  U32                                   dw;
+} S_IOCMD_DWORD_14;
+
+typedef union {
+  S_COMPARE_DWORD_15                    compare;
+  S_COPY_DWORD_15                       copy;
+  S_READ_DWORD_15                       read;
+  S_VERIFY_DWORD_15                     verify;
+  S_WRITE_DWORD_15                      write;
+  S_WRITE_ZEROES_DWORD_15               write_zeroes;
+  U32                                   dw;
+} S_IOCMD_DWORD_15;
 
 /************NVME COMPLETION FORMAT************/
 typedef struct packed {
@@ -795,4 +1404,16 @@ typedef struct packed {
 typedef struct packed {
   bit [31:00] NSID; //Namespace Identifier
 } S_CPL_NS_MANAGEMENT_DWORD_0;
+
+/**************** IO Completion ******************/
+typedef struct packed {
+  bit [31:16] CEDA; // Commands Eligible for Deferred Abort
+  bit [15:00] CMDA; // Commands Aborted
+} S_CPL_CANCEL_DWORD_0;
+
+
+typedef struct packed {
+  bit [31:01] RSVD0; //
+  bit [00:00] LBACZ; // LBAs Cleared to Zero 
+} S_CPL_WRITE_ZEROES_DWORD_0;
 

@@ -87,8 +87,8 @@ task esp_host::post_cmd(nvme_function_manager mgr = null, ref nvme_cmd cmd);
     malloc_memory_space(cmd);
     fill_data_to_host_mem(cmd);
   end
-
   fill_cmd_to_SQ(cmd);
+
   ring_doorbell(cmd, cmd.mgr);
   host_cmd_map[cmd.uid] = cmd;
 

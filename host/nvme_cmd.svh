@@ -54,6 +54,29 @@ class nvme_cmd extends uvm_object;
        //int           usr_mptr;
        int             usr_nlb      = -1;
 
+
+       //nvme_struct_lib.sv
+       S_CMD_DWORD_0       sdw0;
+       S_CMD_DWORD_1       sdw1;
+       //DW2 and DW3 are command specific
+       S_IOCMD_DWORD_2     sdw2_io;
+       S_IOCMD_DWORD_3     sdw3_io;
+       S_CMD_DWORD_4_5     smptr;
+       S_CMD_DWORD_6_7     sprp1;
+       S_CMD_DWORD_8_9     sprp2;
+       S_ACMD_DWORD_10     sdw10_adm;
+       S_ACMD_DWORD_11     sdw11_adm;
+       S_ACMD_DWORD_12     sdw12_adm;
+       S_ACMD_DWORD_13     sdw13_adm;
+       S_ACMD_DWORD_14     sdw14_adm;
+       S_ACMD_DWORD_15     sdw15_adm;
+       S_IOCMD_DWORD_10    sdw10_io;
+       S_IOCMD_DWORD_11    sdw11_io;
+       S_IOCMD_DWORD_12    sdw12_io;
+       S_IOCMD_DWORD_13    sdw13_io;
+       S_IOCMD_DWORD_14    sdw14_io;
+       S_IOCMD_DWORD_15    sdw15_io;
+
   `uvm_object_utils(nvme_cmd)
 
   //`uvm_object_utils_begin(nvme_cmd)
@@ -83,24 +106,6 @@ class nvme_cmd extends uvm_object;
     soft nlb dist {0:=40,[1:3]:=60};   
   }
 
-  //constraint c_ {
-  //  
-  //}
-  //
-  //constraint c_ {
-  //  
-  //}
-  //
-  //constraint c_ {
-  //  
-  //}
-  //
-  //constraint c_ {
-  //  
-  //}
-  
-
-       
 
   extern function             new(string name="nvme_cmd");
   extern function void        create_data(string dp = "INCR");
@@ -123,7 +128,9 @@ class nvme_cmd extends uvm_object;
 
   extern function             assign_uid();
 
-  
+  extern function void        pack_dws();
+  extern function void        unpack_dws();
+
 endclass
 
 
@@ -315,5 +322,60 @@ endfunction
 
 function int nvme_cmd::get_fid();
   return fid;
+endfunction
+
+
+
+function void nvme_cmd::pack_dws();
+  SQE_DW[0]              = sdw0;
+  SQE_DW[1]              = sdw1;
+  {SQE_DW[5], SQE_DW[4]} = smptr;
+  {SQE_DW[7], SQE_DW[6]} = sprp1;
+  {SQE_DW[9], SQE_DW[8]} = sprp2;
+  if (is_admin) begin //is_admin depends on SQID
+    SQE_DW[2]  = 0;
+    SQE_DW[3]  = 0;
+    SQE_DW[10] = sdw10_adm.dw;
+    SQE_DW[11] = sdw11_adm.dw;
+    SQE_DW[12] = sdw12_adm.dw;
+    SQE_DW[13] = sdw13_adm.dw;
+    SQE_DW[14] = sdw14_adm.dw;
+    SQE_DW[15] = sdw15_adm.dw;
+  end else begin
+    SQE_DW[2]  = sdw2_io.dw;
+    SQE_DW[3]  = sdw3_io.dw;
+    SQE_DW[10] = sdw10_io.dw;
+    SQE_DW[11] = sdw11_io.dw;
+    SQE_DW[12] = sdw12_io.dw;
+    SQE_DW[13] = sdw13_io.dw;
+    SQE_DW[14] = sdw14_io.dw;
+    SQE_DW[15] = sdw15_io.dw;
+  end
+endfunction
+
+
+function void nvme_cmd::unpack_dws();
+  sdw0         = SQE_DW[0];
+  sdw1         = SQE_DW[1];
+  smptr        = {SQE_DW[5], SQE_DW[4]};
+  sprp1        = {SQE_DW[7], SQE_DW[6]};
+  sprp2        = {SQE_DW[9], SQE_DW[8]};
+  if (is_admin) begin //is_admin depends on SQID
+    sdw10_adm.dw = SQE_DW[10];
+    sdw11_adm.dw = SQE_DW[11];
+    sdw12_adm.dw = SQE_DW[12];
+    sdw13_adm.dw = SQE_DW[13];
+    sdw14_adm.dw = SQE_DW[14];
+    sdw15_adm.dw = SQE_DW[15];
+  end else begin
+    sdw2_io.dw   = SQE_DW[2] ;
+    sdw3_io.dw   = SQE_DW[3] ;
+    sdw10_io.dw  = SQE_DW[10];
+    sdw11_io.dw  = SQE_DW[11];
+    sdw12_io.dw  = SQE_DW[12];
+    sdw13_io.dw  = SQE_DW[13];
+    sdw14_io.dw  = SQE_DW[14];
+    sdw15_io.dw  = SQE_DW[15];
+  end
 endfunction
 
