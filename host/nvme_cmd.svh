@@ -47,8 +47,6 @@ class nvme_cmd extends uvm_object;
   //  Default value : -1;
   //-----------------------------------------------
        esp_user_ctrl   user_ctrl;
-       int             usr_sqid     = -1;
-       int             usr_cqid     = -1;
        int             usr_cid      = -1;
        int             usr_nsid     = -1;
        //int           usr_mptr;
@@ -77,6 +75,8 @@ class nvme_cmd extends uvm_object;
        S_IOCMD_DWORD_14    sdw14_io;
        S_IOCMD_DWORD_15    sdw15_io;
 
+       GENERAL_PATTERN     gp;
+
   `uvm_object_utils(nvme_cmd)
 
   //`uvm_object_utils_begin(nvme_cmd)
@@ -89,13 +89,6 @@ class nvme_cmd extends uvm_object;
   //-----------------------------------------------
   //             CONSTRAINT
   //-----------------------------------------------
-  constraint c_sqid {
-    //contraint by mgr   //Could be pick later
-  }
-
-  constraint c_cqid {
-    //contraint by mgr   //Could be pick later
-  }
 
 
   constraint c_nsid {
@@ -130,6 +123,12 @@ class nvme_cmd extends uvm_object;
 
   extern function void        pack_dws();
   extern function void        unpack_dws();
+
+  //**********************************
+  //      Used for controller
+  extern function void        set_admin(int admin = 1);
+  extern function void        parse_opc();
+  //**********************************
 
 endclass
 
@@ -168,8 +167,6 @@ endfunction
 
 
 function void nvme_cmd::pre_randomize();
-   //U16         usr_sqid;
-   //U16         usr_cqid;
    //U16         usr_cid;
    //U32         usr_nsid;
    //U16         usr_nlb; 
@@ -219,12 +216,7 @@ endfunction
 
 function void nvme_cmd::stage_0_process_user_ctrl();
 
-  // user_ctrl setting will cover the vip-randomize results and it will be checked in 'stage_1_basic_process()'
-  if(user_ctrl.sqid != -1)
-    sqid = user_ctrl.sqid;
 
-  if(user_ctrl.cqid != -1)
-    cqid = user_ctrl.cqid;
 
   if(user_ctrl.cid != -1)
     cid = user_ctrl.cid;
@@ -354,6 +346,7 @@ function void nvme_cmd::pack_dws();
 endfunction
 
 
+
 function void nvme_cmd::unpack_dws();
   sdw0         = SQE_DW[0];
   sdw1         = SQE_DW[1];
@@ -379,3 +372,21 @@ function void nvme_cmd::unpack_dws();
   end
 endfunction
 
+
+
+//*********************************************
+//              TEMP FUNCTION     
+//*********************************************
+
+function bit nvme_cmd::set_admin(int admin = 1);
+  is_admin = 1;
+endfunction
+
+
+
+function nvme_cmd::parse_opc();
+  case({is_admin, SQE_DW[0][7:0]})
+    {1, 'h01}:  esp_opc = ESP_WRITE;
+    
+  endcase
+endfunction

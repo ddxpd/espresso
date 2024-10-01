@@ -17,23 +17,28 @@ class nvme_dut extends uvm_component;
           nvme_cmd       cmd_q[$];
 
           host_vif       hvif;
-
+          
+	  nvme_namespace     ns[U32];         //KEY is namespace ID
+	  esp_host_sq        hsq[int][int];   //KEY is function ID and host SQ ID
 
   
   extern function        new(string name="nvme_dut", uvm_component parent);
+  extern function void   build_phase(uvm_phase phase);
+  extern function void   connect_phase(uvm_phase phase);
   extern task            main_phase(uvm_phase phase);
+
   extern task            forever_monitor_doorbell();
   extern task            forever_handle_cmd();
   extern function        set_sq_tail(int ta);
-  extern task            read_sqe(ref U32 DW[]);
+  extern task            read_sqe(ref U32 DW[], ref esp_host_sq sq);
   extern task            cmd_handle(nvme_cmd cmd);
   extern task            read_data(U64 addr, ref U8 data[]);
   extern function        print_data(ref U8 data[]);
   extern task            send_cqe(nvme_cmd cmd);
   extern task            send_MSIX_intr();
 
-
-
+  extern task            io_write_handling(nvme_cmd cmd);
+  extern task            io_read_handling(nvme_cmd cmd);
 endclass
 
 
@@ -47,7 +52,7 @@ endfunction
 task nvme_dut::main_phase(uvm_phase phase);
    fork
      begin
-       forever_monitor_doorbell();
+       forever_monitor_doorbell();  //TODO controller doorbell
      end
      begin
        forever_handle_cmd();
@@ -58,18 +63,38 @@ endtask
 
 
 task nvme_dut::forever_monitor_doorbell();
+  esp_host_sq  sq;
+  int     found[$];
+  int     fid;
+  int     sqid;
+
   forever begin
-    if(sq_head != sq_tail)begin
-      U32   SQE[];
+    found = hsq.find_index(x) with { x.size() > 0; };
+    found.shuffle();
+    fid = found[0];
+    found = hsq[fid].find_index(x) with { x != null; };
+    found.shuffle();
+    sqid = found[0];
+    sq = hsq[fid][sqid];
+
+    if(sq.head != sq.tail)begin
+      U32        SQE[];
       nvme_cmd   cmd;
+
       SQE = new[NUM_DW_SQE];
-      `uvm_info(get_name(), $sformatf("sq_head = %0h, sq_tail = %0h", sq_head, sq_tail), UVM_LOW)
       cmd = nvme_cmd::type_id::create("cmd", this);
+
+      `uvm_info(get_name(), $sformatf("Now fetching the SQ(fid, sqid) =(%0h, %0h), sq_head = %0h, sq_tail = %0h", 
+                                       fid, sqid, sq.head, sq.tail), UVM_LOW)
       //read SQ Entry
-      read_sqe(SQE);
-      foreach(SQE[i])begin
-        cmd.SQE_DW[i] = SQE[i];
-      end
+      read_sqe(SQE, sq);
+      cmd.SQE_DW = SQE;
+      //****** TODO should be in a function
+      if(sq.is_admin_sq())
+        cmd.set_admin();
+      cmd.unpack_dws();
+      cmd.parse_opc();
+      //***********************************
       cmd_q.push_back(cmd); 
       #100ns;
     end
@@ -94,28 +119,27 @@ endfunction
 
 
 
-task nvme_dut::read_sqe(ref U32 DW[]);
-  U64  cur_addr = sq_base_addr + sq_head;
+task nvme_dut::read_sqe(ref U32 DW[], ref esp_host_sq sq);
+  U64  addr = sq.get_cmd_addr();
 
-  `uvm_info(get_name(), $sformatf("cur_addr = %0h, sq_base_addr = %0h, sq_head = %0h", cur_addr, sq_base_addr, sq_head), UVM_LOW) 
-  hvif.take_dw_data_group_direct(cur_addr, DW);
-  sq_head++; //TODO
+  `uvm_info(get_name(), $sformatf("Current cmd addr = %0h, sq_base_addr = %0h, sq_head = %0h", 
+                                   cur_addr, sq_base_addr, sq_head), UVM_LOW) 
+  hvif.take_dw_data_group_direct(addr, DW);
+  sq.update_head();
 endtask
 
 
 
 task nvme_dut::cmd_handle(nvme_cmd cmd);
-  U64    prp = {cmd.SQE_DW[7], cmd.SQE_DW[6]}; 
-  int    data_size = 64;
-  U8     data[];
   
-  data = new[data_size];
-  
-  //if need, Get cmd prp/prp list
-  //get_prp();
-  //calculate cmd size
-  read_data(prp, data);
-  print_data(data);
+  case(cmd.esp_opc)
+    ESP_WRITE:          io_write_handling(cmd);
+    ESP_READ:           io_read_handling(cmd);
+             
+
+
+  endcase
+
   send_cqe(cmd);
   send_MSIX_intr();
 endtask
@@ -176,5 +200,185 @@ endtask
 
 
 
+function void nvme_dut::build_phase(uvm_phase phase);
+  bit [7:0]     lba_data_size;    
+  bit [15:0]    meta_data_size; 
+
+  `uvm_info(get_name(), $sformatf("Config controller unique namespace..."), UVM_NONE) 
+  for(int i = 0; i < 512; i++)begin
+    std::randomize(lba_data_size) with {
+      lba_data_size inside {512, 4096};
+    }
+    std::randomize(meta_data_size) with {
+      meta_data_size inside {0, 8, 16};
+    }
+    ns[i].lba_ds = lba_data_size;
+    ns[i].meta_ds = meta_data_size;
+    $display("namespace[%0d] lba_data_size = %0d meta_data_size = %0d", i, ns[i].lba_data_size, ns[i].meta_data_size); 
+  end
+endfunction
 
 
+
+task nvme_dut::io_write_handling(nvme_cmd cmd);
+  //PRP mode only for temp
+  
+  int    data_size;
+  XFR_INFO  xfr_q[$];
+  U8     data[$];
+
+  get_prp_or_sgl(cmd, xfr_q);
+
+
+  
+  
+  //if need, Get cmd prp/prp list
+  //get_prp();
+  //calculate cmd size
+  read_data(prp, data);
+  print_data(data);
+endtask
+
+
+
+function nvme_dut::get_prp_or_sgl(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
+  int    mps     = 12; //TODO
+  int    page_sz = 2**(mps);
+  int    nsid    = cmd.nsid;
+  U64    prp1    = cmd.sprp1; 
+  U64    prp2    = cmd.sprp2; 
+  U64    mptr    = cmd.mptr; 
+  int    nlb     = cmd.gp.write.dw12.nlb;
+  int    lba_ds  = 512**ns[i].lba_ds;
+  int    meta_ds = ns[i].meta_ds;
+  int    meta_in_ext = ns[i].meta_in_extended;
+
+  int    hdata_size_tt;  //host side data in total
+
+
+  if(meta_in_ext)
+    hdata_size_tt = (nlb+1) * (lba_ds+meta_ds);
+  else
+    hdata_size_tt = (nlb+1) * lba_ds;
+  
+  if(hdata_size_tt <= page_sz - prp1)begin
+    //prp2 should not be used
+    XFR_INFO  xfr;
+    xfr.addr = prp1;
+    xfr.size = hdata_size_tt;
+    xfr_q.push_back(xfr);
+  end
+  else if(hdata_size_tt <= 2*page_sz - prp1)begin
+    //prp2 should be a page address
+    XFR_INFO  xfr;
+    xfr.addr = prp1;
+    xfr.size = page_sz - prp1;
+    xfr_q.push_back(xfr);
+    xfr.addr = prp2;
+    xfr.size = hdata_size_tt - (page_sz - prp1);
+    xfr_q.push_back(xfr);
+    `uvm_info(get_name(), $sformatf("xfr_q size = %0d", xfr_q.size()), UVM_NONE) 
+  end
+  else begin
+    int    remain_size;    
+    int    num_extra_prp_need;
+    int    num_remain_extra_prp;
+    U64    prplist_baddr;
+    U8     U8_arry_temp[];
+    U64    U64_arry_temp[];
+    U64    prp_list[$];
+    int    curr_size;
+
+    remain_size          = hdata_size_tt - (page_sz - prp1);
+    num_extra_prp_need   = remain_size/page_sz + (remain_size%page_sz > 0 ? 1 : 0);
+    num_remain_extra_prp = num_extra_prp_need;
+    prplist_baddr        = prp2;
+
+    // Only one prpList needed
+    if(num_remain_extra_prp <= (page_sz-prp2%page_sz)/8)begin  //Could not be so accuate
+      curr_size     = num_remain_extra_prp*8;
+      U8_arry_temp  = new[curr_size];
+      U64_arry_temp = new[curr_size/8];
+
+      hvif.take_byte_data_group_direct(prplist_baddr, U8_arry_temp);
+      turn_bit8_array_2_bit64_array(U8_arry_temp, U64_arry_temp);
+      foreach(U64_arry_temp[i])
+        prp_list.push_back(U64_arry_temp[i]);
+    end 
+    // More than one prpList needed
+    else begin
+      curr_size     = page_sz-prp2%page_sz;
+      U8_arry_temp  = new[curr_size];
+      U64_arry_temp = new[curr_size/8];
+
+      hvif.take_byte_data_group_direct(prplist_baddr, U8_arry_temp);
+      turn_bit8_array_2_bit64_array(U8_arry_temp, U64_arry_temp);
+      foreach(U64_arry_temp[i])
+        prp_list.push_back(U64_arry_temp[i]);
+
+      num_remain_extra_prp -= (page_sz-prp2%page_sz) / 8;
+      
+      //If there are more prps needed.
+      while(num_remain_extra_prp > 0)begin
+        prplist_baddr = prp_list.pop_back();
+        if(num_remain_extra_prp <= page_sz/8)begin
+          U8_arry_temp.delete();
+          U64_arry_temp.delete();
+          curr_size     = num_remain_extra_prp*8;
+          U8_arry_temp  = new[curr_size];
+          U8_arry_temp  = new[curr_size/8];
+          hvif.take_byte_data_group_direct(prplist_baddr, U8_arry_temp);
+          turn_bit8_array_2_bit64_array(U8_arry_temp, U64_arry_temp);
+	  
+          foreach(U64_arry_temp[i])
+            prp_list.push_back(U64_arry_temp[i]);
+
+	  num_remain_extra_prp = 0;
+	end
+	else begin
+          U8_arry_temp.delete();
+          U64_arry_temp.delete();
+          curr_size     = page_size;
+          U8_arry_temp  = new[curr_size];
+          U8_arry_temp  = new[curr_size/8];
+          hvif.take_byte_data_group_direct(prplist_baddr, U8_arry_temp);
+          turn_bit8_array_2_bit64_array(U8_arry_temp, U64_arry_temp);
+	  
+          foreach(U64_arry_temp[i])
+            prp_list.push_back(U64_arry_temp[i]);
+
+	  num_remain_extra_prp -= page_size/8;
+	end
+      end
+    end
+
+
+
+    while(num_remain_extra_prp > 0) begin
+      
+      if(num_remain_extra_prp <= page_sz/8)begin  //Could not be so accuate
+        temp.delete();
+        temp = new[num_remain_extra_prp*8];
+        hvif.take_byte_data_group_direct(prplist_baddr, temp);
+	foreach(temp[i])
+	  prp_list_temp.push_back(temp[i]);
+	num_remain_extra_prp = 0;
+      end 
+      else begin 
+        temp = new[];
+      end
+
+    end
+
+    xfr.addr = prp1;
+    xfr.size = page_sz - prp1;
+
+  end
+
+  
+
+
+
+  if()
+ 
+endfunction

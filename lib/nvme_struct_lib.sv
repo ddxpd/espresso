@@ -1417,3 +1417,9 @@ typedef struct packed {
   bit [00:00] LBACZ; // LBAs Cleared to Zero 
 } S_CPL_WRITE_ZEROES_DWORD_0;
 
+
+typedef union {
+  S_CMD_WRITE                         write;
+  SQE                                 sqes;
+} GENERAL_PATTERN;
+
