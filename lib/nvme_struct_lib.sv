@@ -1423,3 +1423,8 @@ typedef union {
   SQE                                 sqes;
 } GENERAL_PATTERN;
 
+
+typedef struct packed {
+  U64 addr;
+  int size;
+} XFR_INFO;

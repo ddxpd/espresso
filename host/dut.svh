@@ -20,6 +20,7 @@ class nvme_dut extends uvm_component;
           
 	  nvme_namespace     ns[U32];         //KEY is namespace ID
 	  esp_host_sq        hsq[int][int];   //KEY is function ID and host SQ ID
+	  esp_host_cq        hcq[int][int];   //KEY is function ID and host CQ ID
 
   
   extern function        new(string name="nvme_dut", uvm_component parent);
@@ -32,7 +33,7 @@ class nvme_dut extends uvm_component;
   extern function        set_sq_tail(int ta);
   extern task            read_sqe(ref U32 DW[], ref esp_host_sq sq);
   extern task            cmd_handle(nvme_cmd cmd);
-  extern task            read_data(U64 addr, ref U8 data[]);
+  extern task            read_data(XFR_INFO  xfr_q[$], ref U8 data[]);
   extern function        print_data(ref U8 data[]);
   extern task            send_cqe(nvme_cmd cmd);
   extern task            send_MSIX_intr();
@@ -135,9 +136,6 @@ task nvme_dut::cmd_handle(nvme_cmd cmd);
   case(cmd.esp_opc)
     ESP_WRITE:          io_write_handling(cmd);
     ESP_READ:           io_read_handling(cmd);
-             
-
-
   endcase
 
   send_cqe(cmd);
@@ -146,13 +144,21 @@ endtask
 
 
 
-task nvme_dut::read_data(U64 addr, ref U8 data[]);
-  //U32  data_temp[];
-  int  size = data.size();
-  //data_temp = new[size];
-  hvif.take_byte_data_group_direct(addr, data); 
-  //foreach(data[i])
-  //  data[i] = data_temp[i];
+task nvme_dut::read_data(XFR_INFO  xfr_q[$], ref U8 data[$]);
+  U8        temp[$];
+  U64       addr;
+  int       size;
+  XFR_INFO  xfr;
+
+  while(xfr_q.size() > 0)begin
+    temp.delete();
+    xfr  = xfr_q.pop_front();
+    addr = xfr.addr;
+    size = xfr.size;
+    hvif.take_byte_data_queue_direct(addr, size, temp); 
+    foreach(temp[i])
+      data.push_back(temp[i]);
+  end
 endtask
 
 
@@ -167,25 +173,48 @@ endfunction
 
 
 task nvme_dut::send_cqe(nvme_cmd cmd);
-  //if(cq_tail != cq_head - 1)begin//TODO
-    nvme_cpl_entry  cpl;
-    U64             cpl_addr;
+  int   try_cnt = 100;
+  int   fid  = cmd.fid;
+  U16   sqid = cmd.sqid;
+  int   cqid = cmd.cqid;
+  U16   cid  = cmd.cid;
+  U16   sq_head;
+  U64   cqe_addr;
+  esp_host_cq   cq;
 
-    cpl = nvme_cpl_entry::type_id::create("cpl", this);
-    //generate the cpl entry
-    cpl.CQE_DW[0] = 'h0;
-    cpl.CQE_DW[1] = 'h0;
-    cpl.CQE_DW[2] = {16'h1, sq_head};   //TODO
-    cpl.CQE_DW[3] = {15'h0, 1'h1, 16'h0}; //TODO
-    cpl_addr = cq_base_addr + cq_tail*16;
-    `uvm_info(get_name(), $sformatf("cpl_addr = %0h, cq_base_addr = %0h cq_tail = %0h", cpl_addr, cq_base_addr, cq_tail), UVM_LOW) 
-    foreach(cpl.CQE_DW[i])
-      `uvm_info(get_name(), $sformatf("cpl.CQE_DW[%0d] = %0h", i, cpl.CQE_DW[i]), UVM_LOW) 
-    hvif.fill_dw_data_group_direct(cpl_addr, cpl.CQE_DW); 
-    
-    cq_tail++;
-    `uvm_info(get_name(), $sformatf("cpl_addr = %0h, cq_base_addr = %0h cq_tail = %0h", cpl_addr, cq_base_addr, cq_tail), UVM_LOW)
-  //end
+  cq = hcq[fid][cqid];
+  do begin
+    if(cq.tail != cq.head - 1)begin//TODO
+      nvme_cpl_entry  cpl;
+
+      cpl = nvme_cpl_entry::type_id::create("cpl", this);
+      //generate the cpl entry
+      sq_head = hsq[fid][sqid].head;
+      cpl.CQE_DW[0] = 'h0;
+      cpl.CQE_DW[1] = 'h0;
+      cpl.CQE_DW[2] = {sqid, sq_head};   //TODO
+      cpl.CQE_DW[3] = {15'h0, 1'h1, cid}; //TODO phase tag
+      cpe_addr = cq.get_tail_addr();
+      `uvm_info(get_name(), $sformatf("cpl_addr = %0h, cq_base_addr = %0h cq_tail = %0h", cpl_addr, cq_base_addr, cq_tail), UVM_LOW) 
+      foreach(cpl.CQE_DW[i])
+        `uvm_info(get_name(), $sformatf("cpl.CQE_DW[%0d] = %0h", i, cpl.CQE_DW[i]), UVM_LOW) 
+      hvif.fill_dw_data_group_direct(cpl_addr, cpl.CQE_DW); 
+      cq.update_tail();
+      suc = 1;
+      `uvm_info(get_name(), $sformatf("cpl_addr = %0h, cq_base_addr = %0h cq_tail = %0h", cpl_addr, cq_base_addr, cq_tail), UVM_LOW)
+    end
+    else begin
+      `uvm_info(get_name(), $sformatf("Function %0h, CQ %0h is full now, try later.", fid, cqid), UVM_NONE) 
+      suc = 0;
+      try_cnt--;
+    end
+
+    if(!suc)
+      #1000ns;
+  end while(try_cnt > 0 && suc == 0);
+
+  if(suc == 0)
+    `uvm_error(get_name(), $sformatf("Try 100 times, CQE is still not able to send to host CQ")) 
 endtask
 
 
@@ -221,27 +250,27 @@ endfunction
 
 
 task nvme_dut::io_write_handling(nvme_cmd cmd);
-  //PRP mode only for temp
-  
-  int    data_size;
+  U8        data[$];
   XFR_INFO  xfr_q[$];
-  U8     data[$];
 
-  get_prp_or_sgl(cmd, xfr_q);
+  if(cmd.psdt == NVME_PRP)begin
+    get_prp(cmd, xfr_q);
+  end
+  else if(cmd.psdt == NVME_SGL0)begin
 
+  end
+  else if(cmd.psdt == NVME_SGL1)begin
 
+  end
   
-  
-  //if need, Get cmd prp/prp list
-  //get_prp();
-  //calculate cmd size
-  read_data(prp, data);
+  //read data from host memory
+  read_data(xfr_q, data);
   print_data(data);
 endtask
 
 
 
-function nvme_dut::get_prp_or_sgl(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
+function nvme_dut::get_prp(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
   int    mps     = 12; //TODO
   int    page_sz = 2**(mps);
   int    nsid    = cmd.nsid;
@@ -261,35 +290,34 @@ function nvme_dut::get_prp_or_sgl(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
   else
     hdata_size_tt = (nlb+1) * lba_ds;
   
-  if(hdata_size_tt <= page_sz - prp1)begin
+  if(hdata_size_tt <= page_sz - prp1%page_sz)begin
     //prp2 should not be used
     XFR_INFO  xfr;
     xfr.addr = prp1;
     xfr.size = hdata_size_tt;
     xfr_q.push_back(xfr);
   end
-  else if(hdata_size_tt <= 2*page_sz - prp1)begin
+  else if(hdata_size_tt <= 2*page_sz - prp1%page_sz)begin
     //prp2 should be a page address
     XFR_INFO  xfr;
     xfr.addr = prp1;
-    xfr.size = page_sz - prp1;
+    xfr.size = page_sz - prp1%page_sz;
     xfr_q.push_back(xfr);
     xfr.addr = prp2;
-    xfr.size = hdata_size_tt - (page_sz - prp1);
+    xfr.size = hdata_size_tt - (page_sz - prp1%page_sz);
     xfr_q.push_back(xfr);
     `uvm_info(get_name(), $sformatf("xfr_q size = %0d", xfr_q.size()), UVM_NONE) 
   end
   else begin
-    int    remain_size;    
+    int    remain_size, curr_size;    
     int    num_extra_prp_need;
     int    num_remain_extra_prp;
     U64    prplist_baddr;
     U8     U8_arry_temp[];
     U64    U64_arry_temp[];
     U64    prp_list[$];
-    int    curr_size;
 
-    remain_size          = hdata_size_tt - (page_sz - prp1);
+    remain_size          = hdata_size_tt - (page_sz - prp1%page_sz);
     num_extra_prp_need   = remain_size/page_sz + (remain_size%page_sz > 0 ? 1 : 0);
     num_remain_extra_prp = num_extra_prp_need;
     prplist_baddr        = prp2;
@@ -338,7 +366,7 @@ function nvme_dut::get_prp_or_sgl(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
 	else begin
           U8_arry_temp.delete();
           U64_arry_temp.delete();
-          curr_size     = page_size;
+          curr_size     = page_sz;
           U8_arry_temp  = new[curr_size];
           U8_arry_temp  = new[curr_size/8];
           hvif.take_byte_data_group_direct(prplist_baddr, U8_arry_temp);
@@ -347,38 +375,34 @@ function nvme_dut::get_prp_or_sgl(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
           foreach(U64_arry_temp[i])
             prp_list.push_back(U64_arry_temp[i]);
 
-	  num_remain_extra_prp -= page_size/8;
+	  num_remain_extra_prp -= page_sz/8;
 	end
       end
     end
 
-
-
-    while(num_remain_extra_prp > 0) begin
-      
-      if(num_remain_extra_prp <= page_sz/8)begin  //Could not be so accuate
-        temp.delete();
-        temp = new[num_remain_extra_prp*8];
-        hvif.take_byte_data_group_direct(prplist_baddr, temp);
-	foreach(temp[i])
-	  prp_list_temp.push_back(temp[i]);
-	num_remain_extra_prp = 0;
-      end 
-      else begin 
-        temp = new[];
-      end
-
-    end
-
+    //Get the AXI transfer information
+    remain_size = hdata_size_tt;
     xfr.addr = prp1;
-    xfr.size = page_sz - prp1;
+    xfr.size = page_sz - prp1%page_sz;
 
+    while(remain_size > 0) begin
+      if(remain_size <= page_sz)begin
+        XFR_INFO  xfr;
+        xfr.addr = prp_list.pop_front();
+        xfr.size = remain_size;
+	xfr_q.push_back(xfr);
+	if(prp_list.size() != 0)
+	  `uvm_error(get_name(), $sformatf("Num of PRP here should be 0. Now the remain prp = %0d", prp_list.size())) 
+	remain_size = 0;
+      end
+      else begin
+        XFR_INFO  xfr;
+        xfr.addr = prp_list.pop_front();
+        xfr.size = page_sz;
+	xfr_q.push_back(xfr);
+        remain_size -= page_sz;
+      end
+    end
   end
 
-  
-
-
-
-  if()
- 
 endfunction
