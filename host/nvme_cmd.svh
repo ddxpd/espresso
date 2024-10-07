@@ -2,7 +2,7 @@ class nvme_cmd extends uvm_object;
   
   static local int         uid_cnt;    
 
-         nvme_function_manager  mgr;
+         esp_func_manager  mgr;
 
          U32         SQE_DW[];
          CMD_STAT_E  state;
@@ -255,10 +255,10 @@ endfunction
 function void nvme_cmd::stage_3_detail_process();
   case(esp_opc)
     ESP_WRITE:      
-             begin
-	       calculate_data_size();
-               create_data();        
-             end
+      begin
+        calculate_data_size();
+        create_data();        
+      end
 
 
 

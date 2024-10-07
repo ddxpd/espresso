@@ -2,7 +2,7 @@ class esp_host extends uvm_component;
   `uvm_component_utils(esp_host)
 
   host_memory    host_mem;
-  //host_memory_manager   host_mem_mgr;
+  host_memory_manager   mem_mgr;
   nvme_dut       DUT;
   nvme_cmd       cmd_waiting_q[$];
   host_vif       hvif;
@@ -21,26 +21,41 @@ class esp_host extends uvm_component;
   int            msix_2_func[U64];   
 
 
-  nvme_function_manager    mgrs[U32];     // KEY is function id
+  esp_func_manager    mgrs[U32];     // KEY is function id
 
 
   extern function        new(string name="esp_host", uvm_component parent); 
   extern task            main_phase(uvm_phase phase);
 
-  extern task            post_cmd(nvme_function_manager mgr = null, ref nvme_cmd cmd);
+  extern task            post_cmd(esp_func_manager mgr = null, ref nvme_cmd cmd);
   extern function        pick_rand_mgr(ref nvme_cmd cmd);
  
-  extern function        calculate_cmd_size();
   extern function        malloc_memory_space(nvme_cmd cmd);
   extern function        fill_data_to_host_mem(nvme_cmd cmd);
   extern function        fill_cmd_to_SQ(nvme_cmd cmd);
-  extern task            ring_doorbell(nvme_cmd cmd, nvme_function_manager mgr);
+  extern task            ring_doorbell(nvme_cmd cmd, esp_func_manager mgr);
   extern task            forever_monitor_interrupt();
   extern function int    get_cq_tail();
   extern task            get_one_cqe(ref nvme_cpl_entry nvme_cpl);
   
      
   extern function int    find_related_cmd(fid, sqid, cid); 
+
+  //Process before submission(pbs)
+  extern task            pbs_admin_indentify(ref nvme_cmd cmd);
+  extern task            pbs_io_write(ref nvme_cmd cmd);
+  extern task            pbs_admin_delete_sq(ref nvme_cmd cmd);
+  extern task            pbs_admin_create_sq(ref nvme_cmd cmd);
+  extern task            pbs_admin_delete_cq(ref nvme_cmd cmd);
+  extern task            pbs_admin_create_cq(ref nvme_cmd cmd);
+
+  //Process when compeletion(pwc)
+  extern task            pwc_admin_indentify(uid);
+  extern task            pwc_io_write(uid);
+  extern task            pwc_admin_delete_sq(uid);
+  extern task            pwc_admin_create_sq(uid);
+  extern task            pwc_admin_delete_cq(uid);
+  extern task            pwc_admin_create_cq(uid);
 
 
 endclass
@@ -51,8 +66,8 @@ function esp_host::new(string name="esp_host", uvm_component parent);
   super.new(name, parent);
   nvme_namespace         ns;
   
-  nvme_function_manager  func_mgr;
-  func_mgr = nvme_function_manager::type_id::create("func_mgr");  //TODO name should be execlsively
+  esp_func_manager  func_mgr;
+  func_mgr = esp_func_manager::type_id::create("func_mgr");  //TODO name should be execlsively
   func_mgr.fid = 1;
   
   ns = nvme_namespace::type_id::create("ns");
@@ -67,7 +82,7 @@ endfunction
 
 
 
-task esp_host::post_cmd(nvme_function_manager mgr = null, ref nvme_cmd cmd);
+task esp_host::post_cmd(esp_func_manager mgr = null, ref nvme_cmd cmd);
 
   if(mgr == null)begin
     pick_rand_mgr(cmd);
@@ -83,6 +98,15 @@ task esp_host::post_cmd(nvme_function_manager mgr = null, ref nvme_cmd cmd);
   cmd.stage_3_detail_process();
   //check which Q the cmd belongs to
   
+  case(cmd.esp_opc)
+    ESP_IDENTIFY:   pbs_admin_indentify(cmd);
+    ESP_WRITE:      pbs_io_write(cmd);
+    ESP_DELETE_SQ:  pbs_admin_delete_sq(cmd);
+    ESP_CREATE_SQ:  pbs_admin_create_sq(cmd);
+    ESP_DELETE_CQ:  pbs_admin_delete_cq(cmd);
+    ESP_CREATE_CQ:  pbs_admin_create_cq(cmd);
+  endcase
+
   if(cmd.if_has_data())begin
     malloc_memory_space(cmd);
     fill_data_to_host_mem(cmd);
@@ -125,13 +149,9 @@ endtask
 
 
 
-function esp_host::calculate_cmd_size();
-
-endfunction
-
 
 function esp_host::pick_rand_mgr(ref nvme_cmd cmd);
-  nvme_function_manager   mgr_q[$];
+  esp_func_manager   mgr_q[$];
   if(mgrs.size() == 0)
     `uvm_error(get_name(), $sformatf("There is no function manager could be chosen."))
  
@@ -139,6 +159,224 @@ function esp_host::pick_rand_mgr(ref nvme_cmd cmd);
     mgr_q.push_back(mgrs[i]);
   mgr_q.shuffle();
   cmd.mgr = mgr_q[0];
+endfunction
+
+
+
+task esp_host::pbs_admin_create_sq(ref nvme_cmd cmd);
+  esp_host_sq  sq; //Register for VIP
+  bit    pc    = cmd.sdw11_adm.create_iosq.PC;//Physically Contiguous
+  int    qsize = cmd.sdw10_adm.create_iosq.QSIZE;
+  int    remain_size;
+  int    page_sz = 4096;
+  int    sqid, cqid;
+  bit    suc;
+  U64    addr;
+  
+
+  //check if sqid is already assigned
+  //TODO
+  //sqid
+
+  if(cmd.sdw11_adm.create_iosq.CQID == 0)begin
+    cqid = rand_pick_cq(cmd);
+    cmd.sdw11_adm.create_iosq.CQID = cqid;
+    mgrs[cmd.fid].CQ[cqid].SQ[sqid] = sq;
+    sq.set_
+  end
+  
+  sq = esp_host_sq::type_id::create("sq");
+  mgrs[cmd.fid].SQ[sqid] = sq;
+  sq.state = QUEUE_CREATING;
+  sq.set_base_addr(addr);
+  sq.set_continuous(pc);
+  sq.set_qid(sqid);
+  sq.set_q_size(qsize);
+  
+  if(pc)begin
+    mem_mgr.malloc(qsize, addr, suc);
+    if(suc)begin
+      sq.set_base_addr(addr);
+      cmd.sprp1 = addr; 
+    end
+    else begin
+      `uvm_error(get_name(), $sformatf("Could not find enough space for SQ. Timeout is 10000 ns.")) 
+    end
+  end
+  else begin
+    remain_size = qsize + 1;
+    if(remain_size <= page_sz)begin
+      mem_mgr.malloc(remain_size, addr, suc);
+      if(suc)begin
+        sq.set_base_addr(addr);
+        cmd.sprp1 = addr;
+      end
+    end
+    else begin
+      sq.is_prplist = 1;
+      do begin
+        prplist  prplist_h;
+        prplist_h = new();
+	//Last prp list
+        if(remain_size <= page_sz/8*page_sz)begin
+	  mem_mgr.malloc(page_sz, addr, suc);
+	  if(suc)
+	    prplist.base_addr = addr;
+	  else
+	    `uvm_error(get_name(), $sformatf("Prplist base addr malloc failed!")) 
+          
+	  num_page_need = remain_size/page_sz + (remain_size%page_sz > 0 ? 1 : 0)
+	  for(int i = 0; i < num_page_need; i++)begin
+            mem_mgr.malloc(page_sz, addr, suc);
+            if(suc)
+	      prplist_h.prps.push_back(addr);
+	    else
+	      `uvm_error(get_name(), $sformatf("Prplist malloc failed!")) 
+	  end
+	  sq.prp_list.push_back(prplist);
+	  remain_size = 0;
+	end
+	//Not last prp list
+	else begin
+          mem_mgr.malloc(page_sz, addr, suc);
+	  if(suc)
+	    prplist.base_addr = addr;
+	  else
+	    `uvm_error(get_name(), $sformatf("Prplist base addr malloc failed!")) 
+          
+	  num_page_need = page_sz/8 - 1;
+	  for(int i = 0; i < num_page_need; i++)begin
+            mem_mgr.malloc(page_sz, addr, suc);
+            if(suc)
+	      prplist_h.prps.push_back(addr);
+	    else
+	      `uvm_error(get_name(), $sformatf("Prplist malloc failed!")) 
+	  end
+	  sq.prp_list.push_back(prplist);
+	  remain_size = page_sz * (page_sz/8-1);
+	end
+      end while(remain_size > 0);
+      
+      addr = sq.prp_list[0].base_addr;
+      sq.set_base_addr(addr);
+      cmd.sprp1 = addr;
+    end
+    
+  end
+endtask
+
+
+
+task pbs_admin_create_cq(ref nvme_cmd cmd);
+  esp_host_cq  cq; //Register for VIP
+  bit    pc    = cmd.sdw11_adm.create_iocq.PC;//Physically Contiguous
+  int    qsize = cmd.sdw10_adm.create_iocq.QSIZE;
+  int    remain_size;
+  int    page_sz = 4096;
+  int    sqid, cqid;
+  bit    suc;
+  U64    addr;
+  
+
+  //check if cqid is already assigned
+  //TODO
+  //cqid
+
+  cq = esp_host_cq::type_id::create("cq");
+  mgrs[cmd.fid].CQ[cqid] = cq;
+  cq.state = QUEUE_CREATING;
+  cq.set_base_addr(addr);
+  cq.set_continuous(pc);
+  cq.set_qid(cqid);
+  cq.set_q_size(qsize);
+  
+  if(pc)begin
+    mem_mgr.malloc(qsize, addr, suc);
+    if(suc)begin
+      cq.set_base_addr(addr);
+      cmd.sprp1 = addr; 
+    end
+    else begin
+      `uvm_error(get_name(), $sformatf("Could not find enough space for CQ. Timeout is 10000 ns.")) 
+    end
+  end
+  else begin
+    remain_size = qsize + 1;
+    if(remain_size <= page_sz)begin
+      mem_mgr.malloc(remain_size, addr, suc);
+      if(suc)begin
+        cq.set_base_addr(addr);
+        cmd.sprp1 = addr;
+      end
+    end
+    else begin
+      cq.is_prplist = 1;
+      do begin
+        prplist  prplist_h;
+        prplist_h = new();
+	//Last prp list
+        if(remain_size <= page_sz/8*page_sz)begin
+	  mem_mgr.malloc(page_sz, addr, suc);
+	  if(suc)
+	    prplist.base_addr = addr;
+	  else
+	    `uvm_error(get_name(), $sformatf("Prplist base addr malloc failed!")) 
+          
+	  num_page_need = remain_size/page_sz + (remain_size%page_sz > 0 ? 1 : 0)
+	  for(int i = 0; i < num_page_need; i++)begin
+            mem_mgr.malloc(page_sz, addr, suc);
+            if(suc)
+	      prplist_h.prps.push_back(addr);
+	    else
+	      `uvm_error(get_name(), $sformatf("Prplist malloc failed!")) 
+	  end
+	  cq.prp_list.push_back(prplist);
+	  remain_size = 0;
+	end
+	//Not last prp list
+	else begin
+          mem_mgr.malloc(page_sz, addr, suc);
+	  if(suc)
+	    prplist.base_addr = addr;
+	  else
+	    `uvm_error(get_name(), $sformatf("Prplist base addr malloc failed!")) 
+          
+	  num_page_need = page_sz/8 - 1;
+	  for(int i = 0; i < num_page_need; i++)begin
+            mem_mgr.malloc(page_sz, addr, suc);
+            if(suc)
+	      prplist_h.prps.push_back(addr);
+	    else
+	      `uvm_error(get_name(), $sformatf("Prplist malloc failed!")) 
+	  end
+	  cq.prp_list.push_back(prplist);
+	  remain_size = page_sz * (page_sz/8-1);
+	end
+      end while(remain_size > 0);
+      
+      addr = cq.prp_list[0].base_addr;
+      cq.set_base_addr(addr);
+      cmd.sprp1 = addr;
+    end
+    
+  end
+
+endtask 
+
+
+
+function int esp_host::rand_pick_cq(ref nvme_cmd cmd);
+  int  found_q[$];
+  int  cqid;
+
+  found_q = mgrs[cmd.fid].find_index(x) with (x.cqid != 0);
+  if(found_q.size() > 0)begin
+    found_q.shuffle();
+    cqid = found_q[0];
+  end
+  else begin
+    `uvm_error(get_name(), $sformatf("There is no available CQ for SQ to attach with.")) 
+  end
 endfunction
 
 
@@ -161,7 +399,6 @@ function esp_host::malloc_memory_space(nvme_cmd cmd);
   end
 
      
-  //End of PRP and SGL
 endfunction
 
 
@@ -182,25 +419,20 @@ endfunction
 
 function esp_host::fill_cmd_to_SQ(nvme_cmd cmd);
   bit[HOST_AXI_WIDTH-1:0] addr;
-  U32     JFT[];
-
-  JFT = new[16];
 
   addr = sq_base_addr + 64*sq_tail_ptr;//get_cmd_positon();
   `uvm_info(get_name(), $sformatf("sq_base_addr = %0h, sq_base_addr = %0h, sq_tail_ptr = %0h", sq_base_addr, sq_base_addr, sq_tail_ptr), UVM_LOW) 
   foreach(cmd.SQE_DW[i])begin
-    //JFT[i] = cmd.SQE_DW[i];
     `uvm_info(get_name(), $sformatf("cmd.SQE_DW[%0d] = %0h", i, cmd.SQE_DW[i]), UVM_LOW) 
 
   end
   host_mem.fill_dw_data_group_direct(addr, cmd.SQE_DW);
-  //host_mem.fill_dw_data_group_direct(addr, JFT);
   sq_tail_ptr++;
 endfunction
 
 
 
-task esp_host::ring_doorbell(nvme_cmd cmd, nvme_function_manager mgr);
+task esp_host::ring_doorbell(nvme_cmd cmd, esp_func_manager mgr);
  
   int sq_id;
   U16 sq_tail;
@@ -333,18 +565,13 @@ function esp_host::process_cmd_when_completion(int uid, bit[14:0] status);
   cmd = host_cmd_map[uid];
   host_cmd_map[uid].status = status;
   if(cmd.status == 'h0)begin  //TODO
-    case({cmd.is_admin, cmd.opc})
-      {ADMIN_CMD, NVME_IDENTIFY}:
-         begin
-           pwc_admin_indentify(uid);
-         end
-      //{}:begin
-      //   end
-      //{}:begin
-      //   end
-      //{}:begin
-      //   end
-
+    case(cmd.esp_opc)
+      ESP_IDENTIFY:   pwc_admin_indentify(uid);
+      ESP_WRITE:      pwc_io_write(uid);
+      ESP_DELETE_SQ:  pwc_admin_delete_sq(uid);
+      ESP_CREATE_SQ:  pwc_admin_create_sq(uid);
+      ESP_DELETE_CQ:  pwc_admin_delete_cq(uid);
+      ESP_CREATE_CQ:  pwc_admin_create_cq(uid);
     endcase
     
   end
@@ -387,6 +614,30 @@ function esp_host::pwc_identify_cns_0(int uid);
   mgrs[fid].active_ns[nsid].lba_data_size = data[130];
   mgrs[fid].active_ns[nsid].meta_data_size = data[129:128];
 
+  
+endfunction
+
+
+
+function esp_host::pwc_admin_delete_sq(int uid);
+  
+endfunction
+
+
+
+function esp_host::pwc_admin_create_sq(int uid);
+  
+endfunction
+
+
+
+function esp_host::pwc_admin_delete_cq(int uid);
+  
+endfunction
+
+
+
+function esp_host::pwc_admin_create_cq(int uid);
   
 endfunction
 

@@ -1,3 +1,10 @@
+class prplist;
+  U64    base_addr;
+  U64    prps[$];   //Not include the next prplist base addr
+endclass
+
+
+
 class base_q extends uvm_object;
   `uvm_object_utils(base_q)
   
@@ -6,6 +13,7 @@ class base_q extends uvm_object;
     U32    num_dw;
     U32    num_byte;
   } S_QSIZE;
+              QUEUE_STAT_E   state;
 
         local U64       base_addr;
         local bit       continuous;
@@ -14,11 +22,11 @@ class base_q extends uvm_object;
         local U32       tail = 0;  
         local U32       head = 0;  
 
+              bit       is_prplist
+	      prplist   prp_list[$];   //Avalid when prp 'is_prplist = 1'
+
 	      int       entry_size;   // Unit:Byte
 
-              bit       is_creating;
-              bit       is_deleting;
-         
 
 
   extern function          new(string name="esp_host_sq");
@@ -36,6 +44,12 @@ class base_q extends uvm_object;
   //extern function int      get_q_size();
   extern function U64      get_tail_addr();
   extern function U64      get_head_addr();
+
+  extern function void     set_base_addr(U64 addr);
+  extern function void     set_continuous(bit pc);
+  extern function void     set_qid(int qid);
+  extern function void     set_q_size(int q_sz, int entry_sz);
+  extern function void     reset_ptr();
   
   extern function bit      if_admin_sq();
 
@@ -160,19 +174,73 @@ endfunction
 
 
 
+function void base_q::set_base_addr(U64 addr);
+  base_addr = addr;
+endfunction
+
+
+
+function void base_q::set_continuous(bit pc);
+  continuous = pc;
+endfunction
+
+
+
+function void base_q::set_qid(int qid_f);
+  qid = qid_f;
+endfunction
+
+
+
+function void base_q::set_q_size(int qsize_f, int entry_size_f = 16);
+  qsize = qsize_f;
+  entry_size = entry_size_f;
+endfunction
+
+
+
+function void base_q::reset_ptr();
+  head = 0;
+  tail = 0;
+endfunction
+
+
+
+
+
+
+
 
 
 
 class esp_host_sq extends base_q;
   
-        int cqid; 
-	esp_host_cq   CQ;
+  int cqid; 
+  esp_host_cq   CQ;
 
   `uvm_object_utils(esp_host_sq)
 
-  extern function new (string name = "esp_host_sq");
+  extern function new(string name = "esp_host_sq");
+  extern function add_cq(ref esp_host_cq cq);
 endclass
 
+
+
+function esp_host_sq::new(string name = "esp_host_sq");
+  super.new(name);
+endfunction
+
+
+
+function esp_host_sq::add_cq(ref esp_host_cq cq);
+  if(CQ == null)begin
+    CQ = cq;
+    cqid = cq.qid;
+    cq.add_sq(this);
+  end
+  else 
+    `uvm_error(get_name(), $sformatf("CQ is already set for this SQ.")) 
+endfunction
 
 
 
@@ -182,9 +250,23 @@ endclass
 class esp_host_cq extends base_q;
   `uvm_object_utils(esp_host_cq)
 
-  esp_host_sq  SQ[$];
+  esp_host_sq  SQ[int];
 
-  extern function new (string name = "esp_host_cq");
+  extern function new(string name = "esp_host_cq");
+  extern function add_sq(ref esp_host_sq sq);
 endclass
 
 
+
+function esp_host_cq::new(string name = "esp_host_cq");
+  super.new(name);
+endfunction
+
+
+
+function esp_host_cq::add_sq(ref esp_host_sq sq);
+  if(SQ[sq.qid] == null)
+    SQ[sq.qid] = sq;
+  else
+    `uvm_error(get_name(), $sformatf("SQ is already set for SQ %0h.", sq.qid)) 
+endfunction

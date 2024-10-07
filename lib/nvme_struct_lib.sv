@@ -1418,8 +1418,57 @@ typedef struct packed {
 } S_CPL_WRITE_ZEROES_DWORD_0;
 
 
+
+
+//TODO ZHB for test. Should be romoved
+
+typedef struct packed {
+  S_CMD_DWORD_0       dw0;
+  S_CMD_DWORD_1       dw1;
+  S_WRITE_DWORD_2     dw2;
+  S_WRITE_DWORD_3     dw3;
+  S_CMD_DWORD_4       dw4;
+  S_CMD_DWORD_5       dw5;
+  S_CMD_DWORD_6       dw6;
+  S_CMD_DWORD_7       dw7;
+  S_CMD_DWORD_8       dw8;
+  S_CMD_DWORD_9       dw9;
+  S_WRITE_DWORD_10    dw10;
+  S_WRITE_DWORD_11    dw11;
+  S_WRITE_DWORD_12    dw12;
+  S_WRITE_DWORD_13    dw13;
+  //S_WRITE_CTYPE0_DWORD_13;
+  //S_WRITE_CTYPE_NON0_DWORD_13;
+  S_WRITE_DWORD_14    dw14;
+  S_WRITE_DWORD_15    dw15;
+} S_CMD_WRITE;
+
+
+
+typedef struct packed {
+  S_CMD_DWORD_0           dw0;
+  S_CMD_DWORD_1           dw1;
+  S_CMD_DWORD_2           dw2;
+  S_CMD_DWORD_3           dw3;
+  S_CMD_DWORD_4           dw4;
+  S_CMD_DWORD_5           dw5;
+  S_CMD_DWORD_6           dw6;
+  S_CMD_DWORD_7           dw7;
+  S_CMD_DWORD_8           dw8;
+  S_CMD_DWORD_9           dw9;
+  S_CREATE_SQ_DWORD_10    dw10;
+  S_CREATE_SQ_DWORD_11    dw11;
+  S_CREATE_SQ_DWORD_12    dw12;
+  S_CMD_DWORD_13          dw13;
+  S_CMD_DWORD_14          dw14;
+  S_CMD_DWORD_15          dw15;
+} S_CMD_CREATE_SQ;
+
+
+
 typedef union {
   S_CMD_WRITE                         write;
+  S_CMD_CREATE_SQ                     create_sq;
   SQE                                 sqes;
 } GENERAL_PATTERN;
 

@@ -15,6 +15,11 @@ typedef enum bit[8:0] {
   ESP_WRITE        = 'h1,
   ESP_READ         = 'h2,
 
+  
+  ESP_DELETE_SQ    = 'h100,
+  ESP_CREATE_SQ    = 'h101,
+  ESP_DELETE_CQ    = 'h104,
+  ESP_CREATE_CQ    = 'h105,
   ESP_IDENTIFY     = 'h106
 
 } ESP_OPC_E;
@@ -46,7 +51,7 @@ typedef enum bit[1:0] {
 typedef enum U8 {
   CMD_IDLE        = 'h0,
   CMD_DONE        = 'h1,
-  CMD_UNFINISH    = 'h2
+  CMD_UNFINISH    = 'h2,
 } CMD_STAT_E;
 
 
@@ -54,3 +59,12 @@ typedef enum bit {
   IO_CMD        = 'h0,
   ADMIN_CMD     = 'h1
 } CMD_TYPE_E;
+
+
+typedef enum U8 {
+  QUEUE_INACTIVE     = 'h0,
+  QUEUE_ACTIVE       = 'h1,
+  QUEUE_CREATING     = 'h2,
+  QUEUE_DELETING     = 'h3,
+  QUEUE_OCCUPIED     = 'h4
+} QUEUE_STAT_E;
