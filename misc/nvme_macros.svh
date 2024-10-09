@@ -51,7 +51,7 @@ typedef enum bit[1:0] {
 typedef enum U8 {
   CMD_IDLE        = 'h0,
   CMD_DONE        = 'h1,
-  CMD_UNFINISH    = 'h2,
+  CMD_UNFINISH    = 'h2
 } CMD_STAT_E;
 
 

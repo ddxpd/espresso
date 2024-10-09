@@ -5,7 +5,9 @@ class esp_user_ctrl extends uvm_object;
   
   int   cid;
 
-  extern function new(string name="esp_user_ctrl");
+  function new(string name="esp_user_ctrl");
+    super.new(name);
+  endfunction
 
 endclass
 
@@ -16,8 +18,8 @@ function automatic void turn_bit8_array_2_bit32_array(ref U8 src[$], ref U32 des
   U32  temp;
 
   for(int i = 0; i < dest_size; i++)begin
-    t = {src[i*8+3], src[i*8+2], src[i*8+1], src[i*8]};
-    dest.push_back(t);
+    temp = {src[i*8+3], src[i*8+2], src[i*8+1], src[i*8]};
+    dest.push_back(temp);
   end
 endfunction
 
@@ -40,8 +42,8 @@ function automatic void turn_bit8_array_2_bit64_array(ref U8 src[$], ref U64 des
   U32  temp;
 
   for(int i = 0; i < dest_size; i++)begin
-    t = {src[i*8+7], src[i*8+6], src[i*8+5], src[i*8+4], src[i*8+3], src[i*8+2], src[i*8+1], src[i*8]};
-    dest.push_back(t);
+    temp = {src[i*8+7], src[i*8+6], src[i*8+5], src[i*8+4], src[i*8+3], src[i*8+2], src[i*8+1], src[i*8]};
+    dest.push_back(temp);
   end
 endfunction
 

@@ -15,6 +15,7 @@ class nvme_namespace extends uvm_object;
                                   //010b Type 2 protection information is enabled
                                   //011b Type 3 protection information is enabled
   
+                //supt: support
   bit           supt_meta_in_separate; //Metadata Transferred as Separate Buffer Support(MTSBS)
   bit           supt_meta_in_extended; //Metadata Transferred as Extended LBA Support(MTELBAS):
   bit           supt_pi_in_lb;         //Protection Information In Last Bytes (PIILB)

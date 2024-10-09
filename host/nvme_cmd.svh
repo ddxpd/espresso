@@ -75,7 +75,7 @@ class nvme_cmd extends uvm_object;
        S_IOCMD_DWORD_14    sdw14_io;
        S_IOCMD_DWORD_15    sdw15_io;
 
-       GENERAL_PATTERN     gp;
+       //GENERAL_PATTERN     gp;
 
   `uvm_object_utils(nvme_cmd)
 
@@ -257,13 +257,8 @@ function void nvme_cmd::stage_3_detail_process();
     ESP_WRITE:      
       begin
         calculate_data_size();
-        create_data();        
       end
-
-
-
   endcase
-
 endfunction
 
 

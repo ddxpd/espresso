@@ -10,14 +10,14 @@ class mem_slice extends uvm_object;
   bit           in_use;
   
 
-  function new(string name="host_memory_manager");
+  function new(string name="mem_slice");
     super.new(name);
     slice_id = slice_cnt;
     slice_cnt++;
   endfunction
 
 
-  function calculate_size();
+  function void calculate_size();
     size = end_addr + 1 - start_addr;
   endfunction
   
@@ -112,7 +112,7 @@ task host_memory_manager::malloc(int req_size, output U64 addr, output bit suc, 
             suc = 1;  
           end
           else begin
-            if(next_id > last_sid)
+            if(next_sid > last_sid)
               beyond_boudry = 1;
             if(slice[next_sid].in_use == 0)
               slice_occupied = 1;
@@ -121,7 +121,7 @@ task host_memory_manager::malloc(int req_size, output U64 addr, output bit suc, 
       end
       else begin
         next_sid++;
-        if(next_id > last_sid)
+        if(next_sid > last_sid)
           beyond_boudry = 1;
       end
     end while(!suc && !beyond_boudry);
@@ -130,7 +130,7 @@ task host_memory_manager::malloc(int req_size, output U64 addr, output bit suc, 
       #1000ns; 
       time_out += 1000;
     end
-  while(!suc && time_out < timeout);
+  end while(!suc && time_out < timeout);
 
   if(suc)
     addr = slice[start_sid].start_addr;

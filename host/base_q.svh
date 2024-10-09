@@ -1,6 +1,13 @@
+typedef class esp_host_cq;
+typedef class esp_host_sq;
+
+
 class prplist;
   U64    base_addr;
   U64    prps[$];   //Not include the next prplist base addr
+
+  function new(name = "prplist");
+  endfunction
 endclass
 
 
@@ -29,7 +36,7 @@ class base_q extends uvm_object;
 
 
 
-  extern function          new(string name="esp_host_sq");
+  extern function          new(string name="base_q");
   extern function U32      get_num_vld_entry();
   extern function U32      get_num_avail_entry();   
 
@@ -48,7 +55,7 @@ class base_q extends uvm_object;
   extern function void     set_base_addr(U64 addr);
   extern function void     set_continuous(bit pc);
   extern function void     set_qid(int qid);
-  extern function void     set_q_size(int q_sz, int entry_sz);
+  extern function void     set_q_size(int qsize_f, int entry_size_f = 16);
   extern function void     reset_ptr();
   
   extern function bit      if_admin_sq();

@@ -40,6 +40,8 @@ class nvme_dut extends uvm_component;
 
   extern task            io_write_handling(nvme_cmd cmd);
   extern task            io_read_handling(nvme_cmd cmd);
+
+  extern function        get_prp(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
 endclass
 
 
@@ -70,10 +72,10 @@ task nvme_dut::forever_monitor_doorbell();
   int     sqid;
 
   forever begin
-    found = hsq.find_index(x) with { x.size() > 0; };
+    found = hsq.find_index(x) with ( x.size() > 0 );
     found.shuffle();
     fid = found[0];
-    found = hsq[fid].find_index(x) with { x != null; };
+    found = hsq[fid].find_index(x) with ( x != null );
     found.shuffle();
     sqid = found[0];
     sq = hsq[fid][sqid];
@@ -180,6 +182,7 @@ task nvme_dut::send_cqe(nvme_cmd cmd);
   U16   cid  = cmd.cid;
   U16   sq_head;
   U64   cqe_addr;
+  bit   suc;
   esp_host_cq   cq;
 
   cq = hcq[fid][cqid];
@@ -194,7 +197,7 @@ task nvme_dut::send_cqe(nvme_cmd cmd);
       cpl.CQE_DW[1] = 'h0;
       cpl.CQE_DW[2] = {sqid, sq_head};   //TODO
       cpl.CQE_DW[3] = {15'h0, 1'h1, cid}; //TODO phase tag
-      cpe_addr = cq.get_tail_addr();
+      cqe_addr = cq.get_tail_addr();
       `uvm_info(get_name(), $sformatf("cpl_addr = %0h, cq_base_addr = %0h cq_tail = %0h", cpl_addr, cq_base_addr, cq_tail), UVM_LOW) 
       foreach(cpl.CQE_DW[i])
         `uvm_info(get_name(), $sformatf("cpl.CQE_DW[%0d] = %0h", i, cpl.CQE_DW[i]), UVM_LOW) 
@@ -237,10 +240,10 @@ function void nvme_dut::build_phase(uvm_phase phase);
   for(int i = 0; i < 512; i++)begin
     std::randomize(lba_data_size) with {
       lba_data_size inside {512, 4096};
-    }
+    };
     std::randomize(meta_data_size) with {
       meta_data_size inside {0, 8, 16};
-    }
+    };
     ns[i].lba_ds = lba_data_size;
     ns[i].meta_ds = meta_data_size;
     $display("namespace[%0d] lba_data_size = %0d meta_data_size = %0d", i, ns[i].lba_data_size, ns[i].meta_data_size); 
@@ -278,9 +281,9 @@ function nvme_dut::get_prp(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
   U64    prp2    = cmd.sprp2; 
   U64    mptr    = cmd.mptr; 
   int    nlb     = cmd.gp.write.dw12.nlb;
-  int    lba_ds  = 512**ns[i].lba_ds;
-  int    meta_ds = ns[i].meta_ds;
-  int    meta_in_ext = ns[i].meta_in_extended;
+  int    lba_ds  = 512**ns[nsid].lba_ds;
+  int    meta_ds = ns[nsid].meta_ds;
+  int    meta_in_ext = ns[nsid].meta_in_extended;
 
   int    hdata_size_tt;  //host side data in total
 

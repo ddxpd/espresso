@@ -80,11 +80,6 @@ interface host_intf();
   
   
   function automatic void take_byte_data_group_direct(U64 addr, ref U8 data[]);
-    //U8   data_temp[];
-    //int  size = data.size();
-    //data_temp = new[size];
-    //foreach(data[i])
-    //  data_temp[i] = data[i];
     host_mem.take_byte_data_group_direct(addr, data);
   endfunction
   
@@ -102,18 +97,13 @@ interface host_intf();
   
 
   function automatic void take_byte_data_queue_direct(U64 addr, int byte_size, ref U8 data[$]);
-    //U8   data_temp[];
-    //int  size = data.size();
-    //data_temp = new[size];
-    //foreach(data[i])
-    //  data_temp[i] = data[i];
-    host_mem.take_byte_data_queue_direct(addr, data);
+    host_mem.take_byte_data_queue_direct(addr, byte_size, data);
   endfunction
   
   
   
   function automatic void take_dw_data_queue_direct(U64 addr, int byte_size, ref U32 data[$]);
-    host_mem.take_dw_data_queue_direct(addr, data);
+    host_mem.take_dw_data_queue_direct(addr, byte_size, data);
   endfunction
 
 
