@@ -25,10 +25,11 @@ class esp_host extends uvm_component;
   extern function        malloc_memory_space(nvme_cmd cmd);
   extern function        fill_data_to_host_mem(nvme_cmd cmd);
   extern function        fill_cmd_to_SQ(nvme_cmd cmd);
-  extern task            ring_doorbell(nvme_cmd cmd, nvme_function_manager mgr);
+  extern task            ring_doorbell(nvme_cmd cmd, esp_host_mgr mgr);
   extern task            forever_monitor_interrupt();
   extern function int    get_cq_tail();
   extern task            get_one_cqe(ref nvme_cpl_entry nvme_cpl);
+  extern function void   set_host_ranges(int mgr_id, int bar_id, bit [63:0] baddr, bit [63:0] size, ref esp_host_mgr mgr);
 
 
 endclass
@@ -147,7 +148,7 @@ endfunction
 
 
 
-task esp_host::ring_doorbell(nvme_cmd cmd, nvme_function_manager mgr);
+task esp_host::ring_doorbell(nvme_cmd cmd, esp_host_mgr mgr);
  
   int sq_id;
   U16 sq_tail;
@@ -239,4 +240,16 @@ task esp_host::get_one_cqe(ref nvme_cpl_entry nvme_cpl);
 endtask
 
 
+function void esp_host::set_host_ranges(int mgr_id, bit [63:0] baddr[], bit [63:0] size[], ref esp_host_mgr mgr);
+  if (mgr == null) begin
+    mgr = esp_host_mgr::type_id::create("mgr");
+  end
+
+  mgr.mgr_id = mgr_id;
+  mgr.num_of_bar  = baddr.size();
+  for (int i = 0; i < mgr.num_of_bar; i++) begin
+    mgr.bar_range[i].baddr  = baddr[i];
+    mgr.bar_range[i].size   = size[i];
+  end
+endfunction
 
