@@ -1,6 +1,8 @@
 class host_memory;
 
-      U8   mem[U64];
+      U8       mem[U64];
+      U64      start_addr = 'h0;
+      U64      end_addr   = 'h4000_0000 - 1;
 
 
   extern function             new(string name="host_memory");

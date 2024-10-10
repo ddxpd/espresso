@@ -10,7 +10,7 @@ package host_pkg;
   `include "nvme_namespace.svh"
   `include "nvme_mgr.svh"
   `include "nvme_cmd.svh"
-  `include "esp_host_sq.svh"
+  //`include "esp_host_sq.svh"
   `include "nvme_cpl_entry.svh"
   `include "dut.svh"
   `include "esp_host_software.svh"

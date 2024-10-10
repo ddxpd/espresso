@@ -22,14 +22,14 @@ class base_q extends uvm_object;
   } S_QSIZE;
               QUEUE_STAT_E   state;
 
-        local U64       base_addr;
-        local bit       continuous;
-        local U32       qid;
-        local S_QSIZE   qsize;
-        local U32       tail = 0;  
-        local U32       head = 0;  
+              U64       base_addr;
+              bit       continuous;
+              U32       qid;
+              S_QSIZE   qsize;
+              U32       tail = 0;  
+              U32       head = 0;  
 
-              bit       is_prplist
+              bit       is_prplist;
 	      prplist   prp_list[$];   //Avalid when prp 'is_prplist = 1'
 
 	      int       entry_size;   // Unit:Byte
@@ -42,8 +42,8 @@ class base_q extends uvm_object;
 
   extern function bit      if_q_full();
   extern function bit      if_q_empty();
-  extern function bit      update_tail(int incr = 1);
-  extern function bit      update_head(int incr = 1);
+  extern function void     update_tail(int incr = 1);
+  extern function void     update_head(int incr = 1);
   extern function bit      incr_tail();
 
   extern function int      get_tail();
@@ -54,7 +54,7 @@ class base_q extends uvm_object;
 
   extern function void     set_base_addr(U64 addr);
   extern function void     set_continuous(bit pc);
-  extern function void     set_qid(int qid);
+  extern function void     set_qid(int qid_f);
   extern function void     set_q_size(int qsize_f, int entry_size_f = 16);
   extern function void     reset_ptr();
   
@@ -99,7 +99,7 @@ endfunction
 function U32 base_q::get_num_avail_entry();
   U32 num_vld, num_avail;
 
-  num_vld   = get_num_vld_entries();
+  num_vld   = get_num_vld_entry();
   num_avail = qsize.num_entry - 1 - num_vld;
   return num_avail;
 endfunction
@@ -200,7 +200,7 @@ endfunction
 
 
 function void base_q::set_q_size(int qsize_f, int entry_size_f = 16);
-  qsize = qsize_f;
+  qsize.num_byte = qsize_f;
   entry_size = entry_size_f;
 endfunction
 

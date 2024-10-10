@@ -1,5 +1,4 @@
 class mem_slice extends uvm_object;
-  `uvm_object_utils(mem_slice)
 
   static int    slice_cnt;  //1 based
   int           slice_id;
@@ -8,6 +7,8 @@ class mem_slice extends uvm_object;
   U64           end_addr;
   U64           size;
   bit           in_use;
+
+  `uvm_object_utils(mem_slice)
   
 
   function new(string name="mem_slice");
@@ -37,24 +38,25 @@ class host_memory_manager extends uvm_component;
   int        unit_size = 4096; //Bytes
   
 
-  extern function             new(string name="host_memory_manager");
-  extern task                 init();
-  extern task                 malloc(int size, int timeout = 10000, output U64 addr, output bit suc);  //TODO page unaligned
-  extern task                 free(U64 addr);  
+  extern function    new(string name, uvm_component parent);
+  extern task        init();
+  extern task        malloc(int req_size, output U64 addr, output bit suc, input int timeout = 10000);   //TODO page unaligned
+  extern task        free(U64 addr);  
 endclass
 
 
 
-function host_memory_manager::new(string name="host_memory_manager");
-  super.new(name);
+function host_memory_manager::new(string name, uvm_component parent);
+  super.new(name, parent);
 endfunction
 
 
 
 task host_memory_manager::init();
-  U64       mem_start_addr;
-  U64       mem_end_addr;
-  U64       curr_addr;
+  U64         mem_start_addr;
+  U64         mem_end_addr;
+  U64         curr_addr;
+  mem_slice   ms;
 
   mem_start_addr = host_mem.start_addr;
   mem_end_addr   = host_mem.end_addr;
@@ -62,19 +64,16 @@ task host_memory_manager::init();
 
   do begin 
     if(curr_addr + unit_size > mem_end_addr)begin
-      mem_slice   ms;
       ms = mem_slice::type_id::create("mem_slice");
       ms.start_addr = curr_addr;
       ms.end_addr   = mem_end_addr;
     end
     else begin
-      mem_slice   ms;
       ms = mem_slice::type_id::create("mem_slice");
       ms.start_addr = curr_addr;
       ms.end_addr   = curr_addr + unit_size - 1;
-      
     end
-    ms.calcute_size();
+    ms.calculate_size();
     slice.push_back(ms);
     curr_addr += unit_size;
   end while(curr_addr < mem_end_addr);
@@ -88,7 +87,7 @@ endtask
 
 
 
-task host_memory_manager::malloc(int req_size, output U64 addr, output bit suc, int timeout = 10000);  //TODO page unaligned
+task host_memory_manager::malloc(int req_size, output U64 addr, output bit suc, input int timeout = 10000);  //TODO page unaligned
   int  free_size;
   int  next_sid;
   int  last_sid = slice.size() - 1;

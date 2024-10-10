@@ -194,7 +194,7 @@ function void nvme_cmd::post_randomize();
   //assign NSID SQID CQID and CID
   
   if(nsid == -1)begin
-    fq[$] = mgr.active_ns.find_index(x) with (x.is_active == 1);
+    fq    = mgr.active_ns.find_index(x) with (x.is_active == 1);
     ri    = $urandom_range(0, fq.size()-1);
     nsid  = fq[ri];
   end
