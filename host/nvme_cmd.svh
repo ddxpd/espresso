@@ -1,7 +1,7 @@
 class nvme_cmd extends uvm_object;
   
       
-       nvme_function_manager  mgr;
+       esp_host_mgr  mgr;
 
        U32         SQE_DW[];
        CMD_STAT_E  state;

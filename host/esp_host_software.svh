@@ -29,7 +29,7 @@ class esp_host extends uvm_component;
   extern task            forever_monitor_interrupt();
   extern function int    get_cq_tail();
   extern task            get_one_cqe(ref nvme_cpl_entry nvme_cpl);
-  extern function void   set_host_ranges(int mgr_id, int bar_id, bit [63:0] baddr, bit [63:0] size, ref esp_host_mgr mgr);
+  extern function void   set_host_ranges(int mgr_id, bit [63:0] baddr[], bit [63:0] size[], ref esp_host_mgr mgr);
 
 
 endclass
@@ -241,6 +241,7 @@ endtask
 
 
 function void esp_host::set_host_ranges(int mgr_id, bit [63:0] baddr[], bit [63:0] size[], ref esp_host_mgr mgr);
+  string s = "\n";
   if (mgr == null) begin
     mgr = esp_host_mgr::type_id::create("mgr");
   end
@@ -250,6 +251,9 @@ function void esp_host::set_host_ranges(int mgr_id, bit [63:0] baddr[], bit [63:
   for (int i = 0; i < mgr.num_of_bar; i++) begin
     mgr.bar_range[i].baddr  = baddr[i];
     mgr.bar_range[i].size   = size[i];
+    s = {s, $sformatf("    mgr-%0d pcie range bar[%0d] {0x%16x:0x%16x}\n", mgr_id, i, baddr[i], baddr[i]+size[i]-1)};
   end
+  `uvm_info(get_name(), s, UVM_LOW)
+  mgr.state = ST_SET_PCIE_RANGE;
 endfunction
 

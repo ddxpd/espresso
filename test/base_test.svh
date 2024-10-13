@@ -6,6 +6,7 @@ class base_test extends uvm_test;
           host_memory    host_mem;
   virtual host_intf      hvif;
 
+          esp_host_mgr   mgrs[];
 
   extern function        new(string name, uvm_component parent);
   extern function void   build_phase(uvm_phase phase);
@@ -50,6 +51,20 @@ task base_test::main_phase(uvm_phase phase);
   nvme_cmd  cmd_q[$];
   int       num_cmd_send, num_cmd_done, cmd_all_send;
   phase.raise_objection(this); //rasing objection
+
+  mgrs = new[3];
+
+  foreach (mgrs[i]) begin
+    bit [63:0] baddr[], size[];
+    baddr = new[5];
+    size = new[5];
+    foreach (baddr[bar]) begin
+      baddr[bar] = i * 64'h1000_0000 + bar * 64'h10_0000;
+      size[bar]  = 64'h1_0000;
+    end
+    host.set_host_ranges(i, baddr, size, mgrs[i]);
+  end
+
   fork
     begin
       cmd = nvme_cmd::type_id::create("cmd", this);
