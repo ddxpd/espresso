@@ -9,9 +9,15 @@ interface host_intf();
   U64          test;
   
 
+  task send_wr_trans(U64 addr, U8 data[]);
+    foreach (data[i]) begin
+      fill_byte_data_direct(addr, data[i]);
+    end
+  endtask
+
 
   function clear_msix_intr();
-    msix_intr_happens = 0; 
+    msix_intr_happens = 0;
   endfunction 
 
   

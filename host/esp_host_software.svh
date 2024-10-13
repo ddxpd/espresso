@@ -17,6 +17,7 @@ class esp_host extends uvm_component;
   U16            sq_head_ptr; 
   U16            sq_tail_ptr;
 
+  esp_host_mgr   mgrs_recorder[int];
 
   extern function        new(string name="esp_host", uvm_component parent); 
   extern task            post_cmd(ref nvme_cmd cmd);
@@ -255,5 +256,37 @@ function void esp_host::set_host_ranges(int mgr_id, bit [63:0] baddr[], bit [63:
   end
   `uvm_info(get_name(), s, UVM_LOW)
   mgr.state = ST_SET_PCIE_RANGE;
+
+  if (mgrs_recorder.exists(mgr_id)) begin
+    `uvm_fatal(get_name(), $sformatf("mgr-%0d exists. Please check if it has been deleted.", mgr_id))
+  end else begin
+    mgrs_recorder[mgr_id] = mgr;
+  end
 endfunction
+
+
+task esp_host::write_nvme_cap(int mgr_id, int start_dw, U32 data[]);
+  U64 baddr, addr;
+  int num_bt;
+  U8  data_bt[];
+
+  if (!mgrs_recorder.exists(mgr_id)) begin
+    `uvm_error(get_name(), $sformatf("mgr-%0d does not exist in mgrs_recorder"))
+  end else begin
+    baddr = mgrs_recorder[mgr_id].bar_range[0].baddr;
+    addr  = baddr + start_dw * 4;
+  end
+
+  num_bt = data.size() * 4;
+  data_bt = new[num_bt];
+
+  foreach (data[i]) begin
+    data_bt[4*i+0] = data[i][ 7: 0];
+    data_bt[4*i+1] = data[i][15: 8];
+    data_bt[4*i+2] = data[i][23:16];
+    data_bt[4*i+3] = data[i][31:24];
+  end
+
+  hvif.send_wr_trans(addr, data_bt);
+endtask
 
