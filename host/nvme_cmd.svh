@@ -21,6 +21,9 @@ class nvme_cmd extends uvm_object;
          U64         slba;
   rand   U16         nlb; 
          PSDT_E      psdt;   
+    
+         //NVMe Compeletion Queue Entry Field
+         bit[14:0]   status;
 
 
          U8          data[];
@@ -190,7 +193,7 @@ endfunction
 
 function void nvme_cmd::post_randomize();
   int    ri;       //Random Index
-  int    fq[$];    //Found Queue
+  U32    fq[$];    //Found Queue
   //assign NSID SQID CQID and CID
   
   if(nsid == -1)begin
@@ -373,13 +376,13 @@ endfunction
 //              TEMP FUNCTION     
 //*********************************************
 
-function bit nvme_cmd::set_admin(int admin = 1);
+function void nvme_cmd::set_admin(int admin = 1);
   is_admin = 1;
 endfunction
 
 
 
-function nvme_cmd::parse_opc();
+function void nvme_cmd::parse_opc();
   case({is_admin, SQE_DW[0][7:0]})
     {1, 'h01}:  esp_opc = ESP_WRITE;
     

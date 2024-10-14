@@ -62,7 +62,7 @@ task base_test::main_phase(uvm_phase phase);
     cmd.sdw11_adm.create_iocq.PC    == 1;
     cmd.sdw11_adm.create_iocq.IV    == 1;
   }) `uvm_error(get_name(), $sformatf("cmd randomize failed!")) 
-  host.post_cmd(cmd); 
+  host.post_cmd(.cmd(cmd)); 
   //TODO
   //cmd.wait_done();
 
@@ -74,7 +74,7 @@ task base_test::main_phase(uvm_phase phase);
     cmd.sdw11_adm.create_iosq.PC    == 1;
     cmd.sdw11_adm.create_iosq.CQID  == 1;
   }) `uvm_error(get_name(), $sformatf("cmd randomize failed!")) 
-  host.post_cmd(cmd); 
+  host.post_cmd(.cmd(cmd)); 
   //TODO
   //cmd.wait_done();
 
@@ -87,7 +87,7 @@ task base_test::main_phase(uvm_phase phase);
         cmd.sdw1.NSID == 1;
 	cmd.sdw12_io.write.NLB == 1;
       }) `uvm_error(get_name(), $sformatf("cmd randomize failed!")) 
-      host.post_cmd(cmd); 
+      host.post_cmd(.cmd(cmd)); 
 
       num_cmd_send++;
       cmd_q.push_back(cmd);

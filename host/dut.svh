@@ -33,8 +33,8 @@ class nvme_dut extends uvm_component;
   extern function        set_sq_tail(int ta);
   extern task            read_sqe(ref U32 DW[], ref esp_host_sq sq);
   extern task            cmd_handle(nvme_cmd cmd);
-  extern task            read_data(XFR_INFO  xfr_q[$], ref U8 data[]);
-  extern function        print_data(ref U8 data[]);
+  extern task            read_data(XFR_INFO  xfr_q[$], ref U8 data[$]);
+  extern function        print_data(ref U8 data[$]);
   extern task            send_cqe(nvme_cmd cmd);
   extern task            send_MSIX_intr();
 
@@ -93,7 +93,7 @@ task nvme_dut::forever_monitor_doorbell();
       read_sqe(SQE, sq);
       cmd.SQE_DW = SQE;
       //****** TODO should be in a function
-      if(sq.is_admin_sq())
+      if(sq.if_admin_sq())
         cmd.set_admin();
       cmd.unpack_dws();
       cmd.parse_opc();
@@ -123,11 +123,10 @@ endfunction
 
 
 task nvme_dut::read_sqe(ref U32 DW[], ref esp_host_sq sq);
-  U64  addr = sq.get_cmd_addr();
+  U64  addr = sq.get_head_addr();
 
-  `uvm_info(get_name(), $sformatf("Current cmd addr = %0h, sq_base_addr = %0h, sq_head = %0h", 
-                                   cur_addr, sq_base_addr, sq_head), UVM_LOW) 
-  hvif.take_dw_data_group_direct(addr, DW);
+  `uvm_info(get_name(), $sformatf("Current cmd addr = %0h", addr), UVM_LOW) 
+  hvif.take_dw_data_array_direct(addr, DW);
   sq.update_head();
 endtask
 
@@ -165,7 +164,7 @@ endtask
 
 
 
-function nvme_dut::print_data(ref U8 data[]);
+function nvme_dut::print_data(ref U8 data[$]);
   int size = data.size();
   foreach(data[i])
     `uvm_info(get_name(), $sformatf("DUT got data[%0d] = %0h", i, data[i]), UVM_NONE)
@@ -198,13 +197,13 @@ task nvme_dut::send_cqe(nvme_cmd cmd);
       cpl.CQE_DW[2] = {sqid, sq_head};   //TODO
       cpl.CQE_DW[3] = {15'h0, 1'h1, cid}; //TODO phase tag
       cqe_addr = cq.get_tail_addr();
-      `uvm_info(get_name(), $sformatf("cpl_addr = %0h, cq_base_addr = %0h cq_tail = %0h", cpl_addr, cq_base_addr, cq_tail), UVM_LOW) 
+      `uvm_info(get_name(), $sformatf("cpe_addr = %0h, cq_base_addr = %0h tail = %0h, head = %0h", cqe_addr, cq.base_addr, cq.tail, cq.head), UVM_LOW) 
       foreach(cpl.CQE_DW[i])
         `uvm_info(get_name(), $sformatf("cpl.CQE_DW[%0d] = %0h", i, cpl.CQE_DW[i]), UVM_LOW) 
-      hvif.fill_dw_data_group_direct(cpl_addr, cpl.CQE_DW); 
+      hvif.fill_dw_data_array_direct(cqe_addr, cpl.CQE_DW); 
       cq.update_tail();
       suc = 1;
-      `uvm_info(get_name(), $sformatf("cpl_addr = %0h, cq_base_addr = %0h cq_tail = %0h", cpl_addr, cq_base_addr, cq_tail), UVM_LOW)
+      `uvm_info(get_name(), $sformatf("After update tail cpe_addr = %0h, cq_base_addr = %0h cq_tail = %0h, head = %0h", cqe_addr, cq.base_addr, cq.tail, cq.head), UVM_LOW)
     end
     else begin
       `uvm_info(get_name(), $sformatf("Function %0h, CQ %0h is full now, try later.", fid, cqid), UVM_NONE) 
@@ -246,8 +245,14 @@ function void nvme_dut::build_phase(uvm_phase phase);
     };
     ns[i].lba_ds = lba_data_size;
     ns[i].meta_ds = meta_data_size;
-    $display("namespace[%0d] lba_data_size = %0d meta_data_size = %0d", i, ns[i].lba_data_size, ns[i].meta_data_size); 
+    $display("namespace[%0d] lba_data_size = %0d meta_data_size = %0d", i, ns[i].lba_ds, ns[i].meta_ds); 
   end
+endfunction
+
+
+
+function void nvme_dut::connect_phase(uvm_phase phase);
+  super.connect_phase(phase);
 endfunction
 
 
@@ -273,6 +278,27 @@ endtask
 
 
 
+task nvme_dut::io_read_handling(nvme_cmd cmd);
+  U8        data[$];
+  XFR_INFO  xfr_q[$];
+
+  if(cmd.psdt == NVME_PRP)begin
+    get_prp(cmd, xfr_q);
+  end
+  else if(cmd.psdt == NVME_SGL0)begin
+
+  end
+  else if(cmd.psdt == NVME_SGL1)begin
+
+  end
+  
+  //read data from host memory
+  //read_data(xfr_q, data);
+  print_data(data);
+endtask
+
+
+
 function nvme_dut::get_prp(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
   int    mps     = 12; //TODO
   int    page_sz = 2**(mps);
@@ -280,12 +306,13 @@ function nvme_dut::get_prp(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
   U64    prp1    = cmd.sprp1; 
   U64    prp2    = cmd.sprp2; 
   U64    mptr    = cmd.mptr; 
-  int    nlb     = cmd.gp.write.dw12.nlb;
+  int    nlb     = cmd.sdw12_io.write.NLB;
   int    lba_ds  = 512**ns[nsid].lba_ds;
   int    meta_ds = ns[nsid].meta_ds;
   int    meta_in_ext = ns[nsid].meta_in_extended;
 
   int    hdata_size_tt;  //host side data in total
+  XFR_INFO  xfr;
 
 
   if(meta_in_ext)
@@ -331,7 +358,7 @@ function nvme_dut::get_prp(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
       U8_arry_temp  = new[curr_size];
       U64_arry_temp = new[curr_size/8];
 
-      hvif.take_byte_data_group_direct(prplist_baddr, U8_arry_temp);
+      hvif.take_byte_data_array_direct(prplist_baddr, U8_arry_temp);
       turn_bit8_array_2_bit64_array(U8_arry_temp, U64_arry_temp);
       foreach(U64_arry_temp[i])
         prp_list.push_back(U64_arry_temp[i]);
@@ -342,7 +369,7 @@ function nvme_dut::get_prp(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
       U8_arry_temp  = new[curr_size];
       U64_arry_temp = new[curr_size/8];
 
-      hvif.take_byte_data_group_direct(prplist_baddr, U8_arry_temp);
+      hvif.take_byte_data_array_direct(prplist_baddr, U8_arry_temp);
       turn_bit8_array_2_bit64_array(U8_arry_temp, U64_arry_temp);
       foreach(U64_arry_temp[i])
         prp_list.push_back(U64_arry_temp[i]);
@@ -357,8 +384,8 @@ function nvme_dut::get_prp(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
           U64_arry_temp.delete();
           curr_size     = num_remain_extra_prp*8;
           U8_arry_temp  = new[curr_size];
-          U8_arry_temp  = new[curr_size/8];
-          hvif.take_byte_data_group_direct(prplist_baddr, U8_arry_temp);
+          U64_arry_temp  = new[curr_size/8];
+          hvif.take_byte_data_array_direct(prplist_baddr, U8_arry_temp);
           turn_bit8_array_2_bit64_array(U8_arry_temp, U64_arry_temp);
 	  
           foreach(U64_arry_temp[i])
@@ -371,8 +398,8 @@ function nvme_dut::get_prp(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
           U64_arry_temp.delete();
           curr_size     = page_sz;
           U8_arry_temp  = new[curr_size];
-          U8_arry_temp  = new[curr_size/8];
-          hvif.take_byte_data_group_direct(prplist_baddr, U8_arry_temp);
+          U64_arry_temp  = new[curr_size/8];
+          hvif.take_byte_data_array_direct(prplist_baddr, U8_arry_temp);
           turn_bit8_array_2_bit64_array(U8_arry_temp, U64_arry_temp);
 	  
           foreach(U64_arry_temp[i])
@@ -384,9 +411,10 @@ function nvme_dut::get_prp(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
     end
 
     //Get the AXI transfer information
-    remain_size = hdata_size_tt;
     xfr.addr = prp1;
     xfr.size = page_sz - prp1%page_sz;
+    xfr_q.push_back(xfr);
+    remain_size = hdata_size_tt - xfr.size;
 
     while(remain_size > 0) begin
       if(remain_size <= page_sz)begin

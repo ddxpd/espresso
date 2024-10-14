@@ -32,25 +32,25 @@ interface host_intf();
   
   
   
-  function automatic void fill_dw_data_group_direct(U64 addr, ref U32 data[]);
+  function automatic void fill_dw_data_array_direct(U64 addr, ref U32 data[]);
     U32  data_temp[];
     int  size = data.size();
     data_temp = new[size];
     foreach(data[i])begin
       data_temp[i] = data[i];
     end
-    host_mem.fill_dw_data_group_direct(addr, data_temp);
+    host_mem.fill_dw_data_array_direct(addr, data_temp);
   endfunction
   
   
   
-  function automatic void fill_byte_data_group_direct(U64 addr, ref U8 data[]);
+  function automatic void fill_byte_data_array_direct(U64 addr, ref U8 data[]);
     U8   data_temp[];
     int  size = data.size();
     data_temp = new[size];
     foreach(data[i])
       data_temp[i] = data[i];
-    host_mem.fill_byte_data_group_direct(addr, data_temp);
+    host_mem.fill_byte_data_array_direct(addr, data_temp);
   endfunction
   
 
@@ -79,17 +79,17 @@ interface host_intf();
   
   
   
-  function automatic void take_byte_data_group_direct(U64 addr, ref U8 data[]);
-    host_mem.take_byte_data_group_direct(addr, data);
+  function automatic void take_byte_data_array_direct(U64 addr, ref U8 data[]);
+    host_mem.take_byte_data_array_direct(addr, data);
   endfunction
   
   
   
-  function automatic void take_dw_data_group_direct(U64 addr, ref U32 data[]);
+  function automatic void take_dw_data_array_direct(U64 addr, ref U32 data[]);
     U32  data_temp[];
     int  size = data.size();
     data_temp = new[size];
-    host_mem.take_dw_data_group_direct(addr, data_temp);
+    host_mem.take_dw_data_array_direct(addr, data_temp);
     foreach(data[i])
       data[i] = data_temp[i];
   endfunction

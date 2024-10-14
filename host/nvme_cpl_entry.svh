@@ -5,9 +5,10 @@ class nvme_cpl_entry extends uvm_object;
 
        U32     CQE_DW[];
 
-  extern function         new(string name="nvme_cpl_entry");
-  extern function U16     get_sqid();
-  extern function U16     get_cid();
+  extern function            new(string name="nvme_cpl_entry");
+  extern function U16        get_sqid();
+  extern function U16        get_cid();
+  extern function bit[14:0]  get_status();
 
 endclass
 
@@ -31,7 +32,7 @@ endfunction
 
 
 
-//function void nvme_cpl_entry::();
-//
-//endfunction
+function bit[14:0] nvme_cpl_entry::get_status();
+  return CQE_DW[3][31:16];
+endfunction
 

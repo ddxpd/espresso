@@ -243,7 +243,7 @@ function esp_host_sq::add_cq(ref esp_host_cq cq);
   if(CQ == null)begin
     CQ = cq;
     cqid = cq.qid;
-    cq.add_sq(this);
+    //cq.add_sq(this);
   end
   else 
     `uvm_error(get_name(), $sformatf("CQ is already set for this SQ.")) 
