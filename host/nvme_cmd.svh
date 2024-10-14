@@ -111,6 +111,7 @@ class nvme_cmd extends uvm_object;
   extern function void        stage_1_basic_process();   //To self-setting some set auxiliary variable
   extern function void        stage_2_fill_sqe();
   extern function void        stage_3_detail_process();
+  extern function void        stage_4_pack_SQE_DW();
 
   extern function bit         if_is_admin();
   extern function bit         if_has_data();
@@ -133,6 +134,7 @@ class nvme_cmd extends uvm_object;
   extern function void        parse_opc();
   //**********************************
 
+  extern task                 wait_done(int timeout = 100000);
 endclass
 
 
@@ -264,6 +266,12 @@ endfunction
 
 
 
+function void nvme_cmd::stage_4_pack_SQE_DW();
+  pack_dws();
+endfunction
+
+
+
 
 function bit nvme_cmd::if_is_admin();
   return is_admin;
@@ -390,3 +398,23 @@ function void nvme_cmd::parse_opc();
     
   endcase
 endfunction
+
+
+
+task nvme_cmd::wait_done(int timeout = 100000);
+  bit   suc;
+  int   tick;
+
+  do begin
+    if(state == CMD_DONE)begin
+      suc = 1;
+    end
+    else begin
+      #100ns;
+      tick += 100;
+    end
+  end while(tick < timeout && !suc);
+
+  if(suc)
+    `uvm_fatal(get_name(), $sformatf("Timeout %0d ns for cmd uid = %0d", timeout, uid)) 
+endtask

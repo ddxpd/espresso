@@ -67,8 +67,7 @@ task base_test::main_phase(uvm_phase phase);
     cmd.sqid == 0;
   }) `uvm_error(get_name(), $sformatf("cmd randomize failed!")) 
   host.post_cmd(.cmd(cmd)); 
-  //TODO
-  //cmd.wait_done();
+  cmd.wait_done();
 
   cmd = nvme_cmd::type_id::create("cmd", this);
   if(!cmd.randomize with {
@@ -80,8 +79,7 @@ task base_test::main_phase(uvm_phase phase);
     cmd.sqid == 0;
   }) `uvm_error(get_name(), $sformatf("cmd randomize failed!")) 
   host.post_cmd(.cmd(cmd)); 
-  //TODO
-  //cmd.wait_done();
+  cmd.wait_done();
 
   fork
     begin

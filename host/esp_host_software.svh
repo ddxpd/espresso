@@ -112,6 +112,8 @@ task esp_host::post_cmd(esp_func_manager mgr = null, ref nvme_cmd cmd);
     ESP_CREATE_CQ:  pbs_admin_create_cq(cmd);
   endcase
 
+  cmd.stage_4_pack_SQE_DW();
+
   fill_cmd_to_SQ(cmd);
   ring_doorbell(cmd, cmd.mgr);
   host_cmd_map[cmd.uid] = cmd;
@@ -189,10 +191,10 @@ task esp_host::pbs_admin_create_sq(ref nvme_cmd cmd);
       do begin
         prplist  prplist_h;
         prplist_h = new();
-	//Last prp list
+        //Last prp list
         if(remain_size <= page_sz/8*page_sz)begin
-	  mem_mgr.malloc(page_sz, addr, suc);
-	  if(suc)
+          mem_mgr.malloc(page_sz, addr, suc);
+          if(suc)
 	    prplist_h.base_addr = addr;
 	  else
 	    `uvm_error(get_name(), $sformatf("Prplist base addr malloc failed!")) 
@@ -232,6 +234,19 @@ task esp_host::pbs_admin_create_sq(ref nvme_cmd cmd);
       addr = sq.prp_list[0].base_addr;
       sq.set_base_addr(addr);
       cmd.sprp1 = addr;
+
+      foreach(sq.prp_list[z])begin
+        U8    prps_U8[$];
+        addr = sq.prp_list[z].base_addr;
+	turn_bit64_queue_2_bit8_queue(sq.prp_list[z].prps, prps_U8)
+        host_mem.fill_byte_data_queue_direct(addr, prp_U8.size(), prps_U8);	
+	if(sq.prp_list[z+1] != null)begin
+	  for(int i = 0; i < 8; i++)begin
+            host_mem.fill_byte_data_direct(addr + page_sz - (8-i), sq.prp_list[z+1].base_addr[i*8+:8]);
+	  end
+	end
+      end
+
     end
     
   end
@@ -331,7 +346,22 @@ task esp_host::pbs_admin_create_cq(ref nvme_cmd cmd);
       addr = cq.prp_list[0].base_addr;
       cq.set_base_addr(addr);
       cmd.sprp1 = addr;
+
+
+      foreach(cq.prp_list[z])begin
+        U8    prps_U8[$];
+        addr = cq.prp_list[z].base_addr;
+	turn_bit64_queue_2_bit8_queue(cq.prp_list[z].prps, prps_U8)
+        host_mem.fill_byte_data_queue_direct(addr, prp_U8.size(), prps_U8);	
+	if(cq.prp_list[z+1] != null)begin
+	  for(int i = 0; i < 8; i++)begin
+            host_mem.fill_byte_data_direct(addr + page_sz - (8-i), cq.prp_list[z+1].base_addr[i*8+:8]);
+	  end
+	end
+      end
+
     end
+    
     
   end
 
@@ -403,15 +433,17 @@ endfunction
 
 function esp_host::fill_cmd_to_SQ(nvme_cmd cmd);
   bit[HOST_AXI_WIDTH-1:0] addr;
-
-  addr = sq_base_addr + 64*sq_tail_ptr;//get_cmd_positon();
-  `uvm_info(get_name(), $sformatf("sq_base_addr = %0h, sq_base_addr = %0h, sq_tail_ptr = %0h", sq_base_addr, sq_base_addr, sq_tail_ptr), UVM_LOW) 
+  int  fid = cmd.mgr.fid;
+  int  sqid = cmd.sqid;
+  
+  addr = mgrs[fid].SQ[sqid].get_tail_addr();
+  `uvm_info(get_name(), $sformatf("fid = %0h, sqid = %0h, sq_base_addr = %0h, sq_head_addr = %0h, sq_tail_ptr = %0h"fid, sqid, mgrs[fid].SQ[sqid].get_base_addr(), mgrs[fid].SQ[sqid].get_head_addr(), mgrs[fid].SQ[sqid].get_tail_addr()), UVM_LOW) 
   foreach(cmd.SQE_DW[i])begin
     `uvm_info(get_name(), $sformatf("cmd.SQE_DW[%0d] = %0h", i, cmd.SQE_DW[i]), UVM_LOW) 
 
   end
   host_mem.fill_dw_data_array_direct(addr, cmd.SQE_DW);
-  sq_tail_ptr++;
+  mgrs[fid].SQ[sqid].update_tail();
 endfunction
 
 

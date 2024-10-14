@@ -6,7 +6,7 @@ class prplist;
   U64    base_addr;
   U64    prps[$];   //Not include the next prplist base addr
 
-  function new(name = "prplist");
+  function new();
   endfunction
 endclass
 
@@ -51,6 +51,7 @@ class base_q extends uvm_object;
   //extern function int      get_q_size();
   extern function U64      get_tail_addr();
   extern function U64      get_head_addr();
+  extern function U64      get_base_addr();
 
   extern function void     set_base_addr(U64 addr);
   extern function void     set_continuous(bit pc);
@@ -177,6 +178,12 @@ endfunction
 
 function U64 base_q::get_head_addr();
   return base_addr + head * entry_size;
+endfunction
+
+
+
+function U64 base_q::get_base_addr();
+  return base_addr;
 endfunction
 
 
