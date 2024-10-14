@@ -227,8 +227,8 @@ class esp_host_sq extends base_q;
 
   `uvm_object_utils(esp_host_sq)
 
-  extern function new(string name = "esp_host_sq");
-  extern function add_cq(ref esp_host_cq cq);
+  extern function        new(string name = "esp_host_sq");
+  extern function void   add_cq(ref esp_host_cq cq);
 endclass
 
 
@@ -239,10 +239,10 @@ endfunction
 
 
 
-function esp_host_sq::add_cq(ref esp_host_cq cq);
+function void esp_host_sq::add_cq(ref esp_host_cq cq);
   if(CQ == null)begin
     CQ = cq;
-    cqid = cq.qid;
+    //cqid = CQ.qid;
     //cq.add_sq(this);
   end
   else 
@@ -272,8 +272,10 @@ endfunction
 
 
 function esp_host_cq::add_sq(ref esp_host_sq sq);
-  if(SQ[sq.qid] == null)
-    SQ[sq.qid] = sq;
+  int  qid = sq.qid;
+  `uvm_info(get_name(), $sformatf("qid = %0d", qid), UVM_LOW) 
+  if(SQ[qid] == null)
+    SQ[qid] = sq;
   else
     `uvm_error(get_name(), $sformatf("SQ is already set for SQ %0h.", sq.qid)) 
 endfunction

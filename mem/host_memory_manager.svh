@@ -39,7 +39,7 @@ class host_memory_manager extends uvm_component;
   
 
   extern function    new(string name, uvm_component parent);
-  extern task        init();
+  extern function    init();
   extern task        malloc(int req_size, output U64 addr, output bit suc, input int timeout = 10000);   //TODO page unaligned
   extern task        free(U64 addr);  
 endclass
@@ -52,7 +52,7 @@ endfunction
 
 
 
-task host_memory_manager::init();
+function host_memory_manager::init();
   U64         mem_start_addr;
   U64         mem_end_addr;
   U64         curr_addr;
@@ -83,7 +83,7 @@ task host_memory_manager::init();
               slice[i].slice_id, slice[i].start_addr, slice[i].end_addr); 
   end
   
-endtask
+endfunction
 
 
 

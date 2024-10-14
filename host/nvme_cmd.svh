@@ -6,7 +6,7 @@ class nvme_cmd extends uvm_object;
 
          U32         SQE_DW[];
          CMD_STAT_E  state;
-         ESP_OPC_E   esp_opc;
+  rand   ESP_OPC_E   esp_opc;
 
   rand   U8          opc;
          int         fid  = -1;         //assigned in pre_randomzie()
@@ -57,26 +57,26 @@ class nvme_cmd extends uvm_object;
 
 
        //nvme_struct_lib.sv
-       S_CMD_DWORD_0       sdw0;
-       S_CMD_DWORD_1       sdw1;
+  rand S_CMD_DWORD_0       sdw0;
+  rand S_CMD_DWORD_1       sdw1;
        //DW2 and DW3 are command specific
-       S_IOCMD_DWORD_2     sdw2_io;
-       S_IOCMD_DWORD_3     sdw3_io;
-       S_CMD_DWORD_4_5     smptr;
-       S_CMD_DWORD_6_7     sprp1;
-       S_CMD_DWORD_8_9     sprp2;
-       S_ACMD_DWORD_10     sdw10_adm;
-       S_ACMD_DWORD_11     sdw11_adm;
-       S_ACMD_DWORD_12     sdw12_adm;
-       S_ACMD_DWORD_13     sdw13_adm;
-       S_ACMD_DWORD_14     sdw14_adm;
-       S_ACMD_DWORD_15     sdw15_adm;
-       S_IOCMD_DWORD_10    sdw10_io;
-       S_IOCMD_DWORD_11    sdw11_io;
-       S_IOCMD_DWORD_12    sdw12_io;
-       S_IOCMD_DWORD_13    sdw13_io;
-       S_IOCMD_DWORD_14    sdw14_io;
-       S_IOCMD_DWORD_15    sdw15_io;
+  rand S_IOCMD_DWORD_2     sdw2_io;
+  rand S_IOCMD_DWORD_3     sdw3_io;
+  rand S_CMD_DWORD_4_5     smptr;
+  rand S_CMD_DWORD_6_7     sprp1;
+  rand S_CMD_DWORD_8_9     sprp2;
+  rand S_ACMD_DWORD_10     sdw10_adm;
+  rand S_ACMD_DWORD_11     sdw11_adm;
+  rand S_ACMD_DWORD_12     sdw12_adm;
+  rand S_ACMD_DWORD_13     sdw13_adm;
+  rand S_ACMD_DWORD_14     sdw14_adm;
+  rand S_ACMD_DWORD_15     sdw15_adm;
+  rand S_IOCMD_DWORD_10    sdw10_io;
+  rand S_IOCMD_DWORD_11    sdw11_io;
+  rand S_IOCMD_DWORD_12    sdw12_io;
+  rand S_IOCMD_DWORD_13    sdw13_io;
+  rand S_IOCMD_DWORD_14    sdw14_io;
+  rand S_IOCMD_DWORD_15    sdw15_io;
 
        //GENERAL_PATTERN     gp;
 
@@ -174,8 +174,6 @@ function void nvme_cmd::pre_randomize();
    //U32         usr_nsid;
    //U16         usr_nlb; 
 
-   fid = mgr.fid; 
-
    c_nlb.constraint_mode(0);
 
    case(esp_opc)
@@ -221,8 +219,8 @@ function void nvme_cmd::stage_0_process_user_ctrl();
 
 
 
-  if(user_ctrl.cid != -1)
-    cid = user_ctrl.cid;
+  //if(user_ctrl.cid != -1)
+  //  cid = user_ctrl.cid;
 
 endfunction
 
@@ -311,7 +309,11 @@ endfunction
 
 
 function int nvme_cmd::get_fid();
-  return fid;
+  if(mgr != null)
+    return mgr.fid;
+  else
+    `uvm_fatal(get_name(), $sformatf("Mgr is still unsigned to this cmd!")) 
+  //return fid;
 endfunction
 
 

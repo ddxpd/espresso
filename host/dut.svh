@@ -234,18 +234,23 @@ endtask
 function void nvme_dut::build_phase(uvm_phase phase);
   bit [7:0]     lba_data_size;    
   bit [15:0]    meta_data_size; 
+ 
 
   `uvm_info(get_name(), $sformatf("Config controller unique namespace..."), UVM_NONE) 
   for(int i = 0; i < 512; i++)begin
+    nvme_namespace     ns_temp;
+    ns_temp = nvme_namespace::type_id::create($sformatf("ns_%0d", i));
+    ns[i] = ns_temp;
     std::randomize(lba_data_size) with {
-      lba_data_size inside {512, 4096};
+      lba_data_size inside {9, 12};
     };
     std::randomize(meta_data_size) with {
       meta_data_size inside {0, 8, 16};
     };
+    $display("lba_data_size = %0d, meta_data_size = %0d", lba_data_size, meta_data_size);
     ns[i].lba_ds = lba_data_size;
     ns[i].meta_ds = meta_data_size;
-    $display("namespace[%0d] lba_data_size = %0d meta_data_size = %0d", i, ns[i].lba_ds, ns[i].meta_ds); 
+    $display("namespace[%0d] lba_data_size = %0d, meta_data_size = %0d", i, 2**ns[i].lba_ds, ns[i].meta_ds); 
   end
 endfunction
 

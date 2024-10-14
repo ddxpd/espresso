@@ -32,6 +32,7 @@ function void base_test::build_phase(uvm_phase phase);
   if(!uvm_config_db#(virtual host_intf)::get(this, "*" ,"host_vif", hvif))
     `uvm_fatal(get_name(), $sformatf("Can not get the interface")) 
   `uvm_info(get_name(), $sformatf("got the interface" ), UVM_LOW)  
+  
 endfunction
 
 
@@ -44,6 +45,8 @@ function void base_test::connect_phase(uvm_phase phase);
   host.hvif         = hvif;
   DUT.hvif          = hvif;
   hvif.host_mem     = host_mem;
+  mem_mgr.host_mem  = host_mem;
+  mem_mgr.init();
 endfunction
 
 
@@ -61,6 +64,7 @@ task base_test::main_phase(uvm_phase phase);
     cmd.sdw10_adm.create_iocq.QSIZE == 'hF;
     cmd.sdw11_adm.create_iocq.PC    == 1;
     cmd.sdw11_adm.create_iocq.IV    == 1;
+    cmd.sqid == 0;
   }) `uvm_error(get_name(), $sformatf("cmd randomize failed!")) 
   host.post_cmd(.cmd(cmd)); 
   //TODO
@@ -73,6 +77,7 @@ task base_test::main_phase(uvm_phase phase);
     cmd.sdw10_adm.create_iosq.QSIZE == 'hF;
     cmd.sdw11_adm.create_iosq.PC    == 1;
     cmd.sdw11_adm.create_iosq.CQID  == 1;
+    cmd.sqid == 0;
   }) `uvm_error(get_name(), $sformatf("cmd randomize failed!")) 
   host.post_cmd(.cmd(cmd)); 
   //TODO

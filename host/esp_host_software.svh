@@ -140,15 +140,16 @@ task esp_host::pbs_admin_create_sq(ref nvme_cmd cmd);
   int    qsize = cmd.sdw10_adm.create_iosq.QSIZE;
   int    remain_size;
   int    page_sz = 4096;
-  int    sqid, cqid;
+  int    fid, sqid, cqid;
   bit    suc;
   U64    addr;
   int    num_page_need;  
   
-
+  fid = cmd.get_fid();
   //check if sqid is already assigned
   //TODO
   //sqid
+  sqid = cmd.sdw10_adm.create_iosq.QID;
 
   if(cmd.sdw11_adm.create_iosq.CQID == 0)begin
     cqid = rand_pick_cq(cmd);
@@ -156,13 +157,13 @@ task esp_host::pbs_admin_create_sq(ref nvme_cmd cmd);
   end
   
   sq = esp_host_sq::type_id::create("sq");
-  mgrs[cmd.fid].SQ[sqid] = sq;
+  mgrs[fid].SQ[sqid] = sq;
   sq.state = QUEUE_CREATING;
   sq.set_continuous(pc);
   sq.set_qid(sqid);
   sq.set_q_size(qsize);
-  sq.add_cq(mgrs[cmd.fid].CQ[cqid]);
-  mgrs[cmd.fid].CQ[cqid].add_sq(sq);
+  sq.add_cq(mgrs[fid].CQ[cqid]);
+  mgrs[fid].CQ[cqid].add_sq(sq);
   
   if(pc)begin
     mem_mgr.malloc(qsize, addr, suc);
@@ -244,18 +245,19 @@ task esp_host::pbs_admin_create_cq(ref nvme_cmd cmd);
   int    qsize = cmd.sdw10_adm.create_iocq.QSIZE;
   int    remain_size;
   int    page_sz = 4096;
-  int    sqid, cqid;
+  int    fid, sqid, cqid;
   bit    suc;
   U64    addr;
   int    num_page_need;  
   
-
+  fid = cmd.get_fid();
   //check if cqid is already assigned
   //TODO
   //cqid
+  cqid = cmd.sdw10_adm.create_iocq.QID;
 
   cq = esp_host_cq::type_id::create("cq");
-  mgrs[cmd.fid].CQ[cqid] = cq;
+  mgrs[fid].CQ[cqid] = cq;
   cq.state = QUEUE_CREATING;
   cq.set_base_addr(addr);
   cq.set_continuous(pc);
@@ -340,8 +342,11 @@ endtask
 function int esp_host::rand_pick_cq(ref nvme_cmd cmd);
   int  found_q[$];
   int  cqid;
+  int  fid;
 
-  found_q = mgrs[cmd.fid].CQ.find_index(x) with (x.qid != 0);
+  fid = cmd.get_fid();
+
+  found_q = mgrs[fid].CQ.find_index(x) with (x.qid != 0);
   if(found_q.size() > 0)begin
     found_q.shuffle();
     cqid = found_q[0];
