@@ -69,7 +69,11 @@ endclass
 function esp_host::new(string name="esp_host", uvm_component parent);
   nvme_namespace    ns;
   esp_func_manager  func_mgr;
+  esp_host_sq       sq;
+  esp_host_cq       cq;
+
   super.new(name, parent);
+
   func_mgr = esp_func_manager::type_id::create("func_mgr");  //TODO name should be execlsively
   func_mgr.fid = 8; //random pick
   
@@ -80,6 +84,20 @@ function esp_host::new(string name="esp_host", uvm_component parent);
   ns.nsid = 1;
   func_mgr.active_ns[ns.nsid] = ns;
   mgrs[func_mgr.fid] = func_mgr;
+
+  cq = esp_host_cq::type_id::create("cq");
+  cq.init(.base_addr('h1000),  .qsize(80), .entry_size(16));
+  cq.set_qid(0);
+  cq.reset_ptr();
+  mgrs[func_mgr.fid].CQ[0] = cq;
+
+  sq = esp_host_sq::type_id::create("sq");
+  sq.init(.base_addr('h2000),  .qsize(80), .entry_size(64));
+  sq.set_qid(0);
+  sq.reset_ptr();
+  sq.add_cq(cq);
+  mgrs[func_mgr.fid].SQ[0] = sq;
+  
 
   msix_2_func['h00000001] = 'h1;
 endfunction
@@ -113,7 +131,7 @@ task esp_host::post_cmd(esp_func_manager mgr = null, ref nvme_cmd cmd);
   endcase
 
   cmd.stage_4_pack_SQE_DW();
-
+  `uvm_info(get_name(), $sformatf("cmd sqid = %0d", cmd.sqid), UVM_LOW) 
   fill_cmd_to_SQ(cmd);
   ring_doorbell(cmd, cmd.mgr);
   host_cmd_map[cmd.uid] = cmd;
@@ -238,8 +256,8 @@ task esp_host::pbs_admin_create_sq(ref nvme_cmd cmd);
       foreach(sq.prp_list[z])begin
         U8    prps_U8[$];
         addr = sq.prp_list[z].base_addr;
-	turn_bit64_queue_2_bit8_queue(sq.prp_list[z].prps, prps_U8)
-        host_mem.fill_byte_data_queue_direct(addr, prp_U8.size(), prps_U8);	
+	turn_bit64_queue_2_bit8_queue(sq.prp_list[z].prps, prps_U8);
+        host_mem.fill_byte_data_queue_direct(addr, prps_U8.size(), prps_U8);	
 	if(sq.prp_list[z+1] != null)begin
 	  for(int i = 0; i < 8; i++)begin
             host_mem.fill_byte_data_direct(addr + page_sz - (8-i), sq.prp_list[z+1].base_addr[i*8+:8]);
@@ -351,8 +369,8 @@ task esp_host::pbs_admin_create_cq(ref nvme_cmd cmd);
       foreach(cq.prp_list[z])begin
         U8    prps_U8[$];
         addr = cq.prp_list[z].base_addr;
-	turn_bit64_queue_2_bit8_queue(cq.prp_list[z].prps, prps_U8)
-        host_mem.fill_byte_data_queue_direct(addr, prp_U8.size(), prps_U8);	
+	turn_bit64_queue_2_bit8_queue(cq.prp_list[z].prps, prps_U8);
+        host_mem.fill_byte_data_queue_direct(addr, prps_U8.size(), prps_U8);	
 	if(cq.prp_list[z+1] != null)begin
 	  for(int i = 0; i < 8; i++)begin
             host_mem.fill_byte_data_direct(addr + page_sz - (8-i), cq.prp_list[z+1].base_addr[i*8+:8]);
@@ -435,9 +453,10 @@ function esp_host::fill_cmd_to_SQ(nvme_cmd cmd);
   bit[HOST_AXI_WIDTH-1:0] addr;
   int  fid = cmd.mgr.fid;
   int  sqid = cmd.sqid;
+  `uvm_info(get_name(), $sformatf("sqid = %0d", sqid), UVM_LOW) 
   
   addr = mgrs[fid].SQ[sqid].get_tail_addr();
-  `uvm_info(get_name(), $sformatf("fid = %0h, sqid = %0h, sq_base_addr = %0h, sq_head_addr = %0h, sq_tail_ptr = %0h"fid, sqid, mgrs[fid].SQ[sqid].get_base_addr(), mgrs[fid].SQ[sqid].get_head_addr(), mgrs[fid].SQ[sqid].get_tail_addr()), UVM_LOW) 
+  `uvm_info(get_name(), $sformatf("fid = %0h, sqid = %0h, sq_base_addr = %0h, sq_head_addr = %0h, sq_tail_ptr = %0h", fid, sqid, mgrs[fid].SQ[sqid].get_base_addr(), mgrs[fid].SQ[sqid].get_head_addr(), mgrs[fid].SQ[sqid].get_tail_addr()), UVM_LOW) 
   foreach(cmd.SQE_DW[i])begin
     `uvm_info(get_name(), $sformatf("cmd.SQE_DW[%0d] = %0h", i, cmd.SQE_DW[i]), UVM_LOW) 
 

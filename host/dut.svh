@@ -67,39 +67,43 @@ endtask
 
 task nvme_dut::forever_monitor_doorbell();
   esp_host_sq  sq;
-  int     found[$];
+  int     fq[$];
   int     fid;
   int     sqid;
 
   forever begin
-    found = hsq.find_index(x) with ( x.size() > 0 );
-    found.shuffle();
-    fid = found[0];
-    found = hsq[fid].find_index(x) with ( x != null );
-    found.shuffle();
-    sqid = found[0];
-    sq = hsq[fid][sqid];
+    fq = hsq.find_index(x) with ( x.size() > 0 );
+    if(fq.size() > 0)begin
+      fq.shuffle();
+      `uvm_info(get_name(), $sformatf("fq q size = %0d", fq.size()), UVM_LOW) 
+      fid = fq[0];
+      fq = hsq[fid].find_index(x) with ( x != null );
+      fq.shuffle();
+      sqid = fq[0];
+      `uvm_info(get_name(), $sformatf("doorbell fid = %0h, sqid = %0h", fid, sqid), UVM_LOW) 
+      sq = hsq[fid][sqid];
 
-    if(sq.head != sq.tail)begin
-      U32        SQE[];
-      nvme_cmd   cmd;
+      if(sq.head != sq.tail)begin
+        U32        SQE[];
+        nvme_cmd   cmd;
 
-      SQE = new[NUM_DW_SQE];
-      cmd = nvme_cmd::type_id::create("cmd", this);
+        SQE = new[NUM_DW_SQE];
+        cmd = nvme_cmd::type_id::create("cmd", this);
 
-      `uvm_info(get_name(), $sformatf("Now fetching the SQ(fid, sqid) =(%0h, %0h), sq_head = %0h, sq_tail = %0h", 
-                                       fid, sqid, sq.head, sq.tail), UVM_LOW)
-      //read SQ Entry
-      read_sqe(SQE, sq);
-      cmd.SQE_DW = SQE;
-      //****** TODO should be in a function
-      if(sq.if_admin_sq())
-        cmd.set_admin();
-      cmd.unpack_dws();
-      cmd.parse_opc();
-      //***********************************
-      cmd_q.push_back(cmd); 
-      #100ns;
+        `uvm_info(get_name(), $sformatf("Now fetching the SQ(fid, sqid) =(%0h, %0h), sq_head = %0h, sq_tail = %0h", 
+                                         fid, sqid, sq.head, sq.tail), UVM_LOW)
+        //read SQ Entry
+        read_sqe(SQE, sq);
+        cmd.SQE_DW = SQE;
+        //****** TODO should be in a function
+        if(sq.if_admin_sq())
+          cmd.set_admin();
+        cmd.unpack_dws();
+        cmd.parse_opc();
+        //***********************************
+        cmd_q.push_back(cmd); 
+        #100ns;
+      end
     end
     #100ns;
   end

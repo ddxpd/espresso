@@ -80,14 +80,10 @@ class nvme_cmd extends uvm_object;
 
        //GENERAL_PATTERN     gp;
 
-  `uvm_object_utils(nvme_cmd)
 
-  //`uvm_object_utils_begin(nvme_cmd)
-  //  `uvm_field_int      (addr, UVM_ALL_ON)
-  //  `uvm_field_queue_int(data, UVM_ALL_ON)
-  //  `uvm_field_object   (ext,  UVM_ALL_ON)
-  //  `uvm_field_string   (str,  UVM_ALL_ON)
-  //`uvm_object_utils_end
+  `uvm_object_utils_begin(nvme_cmd)
+    //`uvm_field_int      (sqid, UVM_ALL_ON)
+  `uvm_object_utils_end
 
   //-----------------------------------------------
   //             CONSTRAINT
