@@ -8,17 +8,8 @@ class esp_host extends uvm_component;
   host_vif       hvif;
   nvme_cmd       host_cmd_map[int];     //KEY is unique ID
 
-  int            cur_phase_bit;
-  U64            cq_base_addr = 'h5_0000;
-  U16            cq_head_ptr; 
-  U16            cq_tail_ptr; 
-
-  U64            sq_base_addr = 'h6_0000;
-  U16            sq_head_ptr; 
-  U16            sq_tail_ptr;
-
-  //For temp
-  int            msix_2_func[U64];   
+  //For temporary
+  int            msix_id_2_func[int];   
 
 
   esp_func_manager    mgrs[U32];     // KEY is function id
@@ -27,28 +18,28 @@ class esp_host extends uvm_component;
   extern function        new(string name="esp_host", uvm_component parent); 
   extern task            main_phase(uvm_phase phase);
 
-  extern task            post_cmd(esp_func_manager mgr = null, ref nvme_cmd cmd);
-  extern function        pick_rand_mgr(ref nvme_cmd cmd);
+  extern task            post_cmd(nvme_cmd cmd, esp_func_manager mgr = null);
+  extern function        pick_rand_mgr(nvme_cmd cmd);
  
   extern function        malloc_memory_space(nvme_cmd cmd);
   extern function        fill_data_to_host_mem(nvme_cmd cmd);
   extern function        fill_cmd_to_SQ(nvme_cmd cmd);
   extern task            ring_doorbell(nvme_cmd cmd, esp_func_manager mgr);
   extern task            forever_monitor_interrupt();
-  extern function int    get_cq_tail();
-  extern task            get_one_cqe(ref nvme_cpl_entry nvme_cpl);
+  extern function int    get_cq_tail(esp_host_cq cq);
+  extern task            get_one_cqe(esp_host_cq cq, nvme_cpl_entry nvme_cpl);
   
      
   extern function int    find_related_cmd(int fid, int sqid, int cid); 
-  extern function int    rand_pick_cq(ref nvme_cmd cmd);
+  extern function int    rand_pick_cq(nvme_cmd cmd);
 
   //Process before submission(pbs)
-  extern task            pbs_admin_indentify(ref nvme_cmd cmd);
-  extern task            pbs_io_write(ref nvme_cmd cmd);
-  extern task            pbs_admin_delete_sq(ref nvme_cmd cmd);
-  extern task            pbs_admin_create_sq(ref nvme_cmd cmd);
-  extern task            pbs_admin_delete_cq(ref nvme_cmd cmd);
-  extern task            pbs_admin_create_cq(ref nvme_cmd cmd);
+  extern task            pbs_admin_indentify(nvme_cmd cmd);
+  extern task            pbs_io_write(nvme_cmd cmd);
+  extern task            pbs_admin_delete_sq(nvme_cmd cmd);
+  extern task            pbs_admin_create_sq(nvme_cmd cmd);
+  extern task            pbs_admin_delete_cq(nvme_cmd cmd);
+  extern task            pbs_admin_create_cq(nvme_cmd cmd);
 
   extern task            process_cmd_when_completion(int uid, bit[14:0] status);
   //Process when compeletion(pwc)
@@ -68,33 +59,73 @@ endclass
 
 function esp_host::new(string name="esp_host", uvm_component parent);
   nvme_namespace    ns;
-  esp_func_manager  func_mgr;
+  esp_func_manager  mgr;
+  esp_host_sq       sq;
+  esp_host_cq       cq;
+  nvme_msix_vector  msix;
+
   super.new(name, parent);
-  func_mgr = esp_func_manager::type_id::create("func_mgr");  //TODO name should be execlsively
-  func_mgr.fid = 8; //random pick
+
+  mgr = esp_func_manager::type_id::create("mgr");  //TODO name should be execlsively
+  mgr.fid = 8; //random pick
   
   ns = nvme_namespace::type_id::create("ns");
   ns.lba_ds  = 4096;
   ns.meta_ds = 16;
   ns.meta_in_extended = 1;
   ns.nsid = 1;
-  func_mgr.active_ns[ns.nsid] = ns;
-  mgrs[func_mgr.fid] = func_mgr;
+  mgr.active_ns[ns.nsid] = ns;
+  mgrs[mgr.fid] = mgr;
 
-  msix_2_func['h00000001] = 'h1;
+  //Temporary Admin CQ creating
+  cq = esp_host_cq::type_id::create("cq");
+  cq.set_qid(0);  
+  cq.set_continuous(1);  
+  cq.set_base_addr('h1000);
+  cq.set_num_entry(5);
+  cq.reset_ptr();
+  mgrs[mgr.fid].register_cq(cq);
+
+  //Temporary Admin SQ creating
+  sq = esp_host_sq::type_id::create("sq");
+  sq.set_qid(0);
+  sq.set_continuous(1);
+  sq.set_base_addr('h2000);
+  sq.set_num_entry(5);
+  sq.reset_ptr();
+  sq.add_cq(cq);
+  mgrs[mgr.fid].register_sq(sq);
+
+  //Temporary MSIX Vector
+  msix = nvme_msix_vector::type_id::create("msix");
+  msix.vid = 0;
+  msix.addr = 'h00000001;
+  msix.data = 'h10000001;
+  mgrs[mgr.fid].msix_vector[0] = msix;
+  msix_id_2_func[0] = mgr.fid;
+
+  msix = nvme_msix_vector::type_id::create("msix");
+  msix.vid = 1;
+  msix.addr = 'h00000002;
+  msix.data = 'h20000002;
+  mgrs[mgr.fid].msix_vector[1] = msix;
+  msix_id_2_func[1] = mgr.fid;
+  
+
 endfunction
 
 
 
-task esp_host::post_cmd(esp_func_manager mgr = null, ref nvme_cmd cmd);
+task esp_host::post_cmd(nvme_cmd cmd, esp_func_manager mgr = null);
 
+  `uvm_info(get_name(), $sformatf("Host is processing cmd %s", cmd.esp_opc.name()), UVM_LOW) 
   if(mgr == null)begin
     pick_rand_mgr(cmd);
   end
   else begin
     cmd.mgr = mgr;
   end
-  `uvm_info("", $sformatf("cmd.mgr.fid = %0h", cmd.mgr.fid), UVM_LOW) 
+  `uvm_info("", $sformatf("Assign cmd to fid = %0h", cmd.mgr.fid), UVM_LOW) 
 
   //SQE_DW is not packed yet
   cmd.stage_0_process_user_ctrl();
@@ -112,6 +143,8 @@ task esp_host::post_cmd(esp_func_manager mgr = null, ref nvme_cmd cmd);
     ESP_CREATE_CQ:  pbs_admin_create_cq(cmd);
   endcase
 
+  cmd.stage_4_pack_SQE_DW();
+  `uvm_info(get_name(), $sformatf("cmd sqid = %0d", cmd.sqid), UVM_LOW) 
   fill_cmd_to_SQ(cmd);
   ring_doorbell(cmd, cmd.mgr);
   host_cmd_map[cmd.uid] = cmd;
@@ -121,7 +154,7 @@ endtask
 
 
 
-function esp_host::pick_rand_mgr(ref nvme_cmd cmd);
+function esp_host::pick_rand_mgr(nvme_cmd cmd);
   esp_func_manager   mgr_q[$];
   if(mgrs.size() == 0)
     `uvm_error(get_name(), $sformatf("There is no function manager could be chosen."))
@@ -134,10 +167,10 @@ endfunction
 
 
 
-task esp_host::pbs_admin_create_sq(ref nvme_cmd cmd);
+task esp_host::pbs_admin_create_sq(nvme_cmd cmd);
   esp_host_sq  sq; //Register for VIP
   bit    pc    = cmd.sdw11_adm.create_iosq.PC;//Physically Contiguous
-  int    qsize = cmd.sdw10_adm.create_iosq.QSIZE;
+  int    qsize = cmd.sdw10_adm.create_iosq.QSIZE; 
   int    remain_size;
   int    page_sz = 4096;
   int    fid, sqid, cqid;
@@ -161,7 +194,7 @@ task esp_host::pbs_admin_create_sq(ref nvme_cmd cmd);
   sq.state = QUEUE_CREATING;
   sq.set_continuous(pc);
   sq.set_qid(sqid);
-  sq.set_q_size(qsize);
+  sq.set_num_entry(qsize+1);
   sq.add_cq(mgrs[fid].CQ[cqid]);
   mgrs[fid].CQ[cqid].add_sq(sq);
   
@@ -189,10 +222,10 @@ task esp_host::pbs_admin_create_sq(ref nvme_cmd cmd);
       do begin
         prplist  prplist_h;
         prplist_h = new();
-	//Last prp list
+        //Last prp list
         if(remain_size <= page_sz/8*page_sz)begin
-	  mem_mgr.malloc(page_sz, addr, suc);
-	  if(suc)
+          mem_mgr.malloc(page_sz, addr, suc);
+          if(suc)
 	    prplist_h.base_addr = addr;
 	  else
 	    `uvm_error(get_name(), $sformatf("Prplist base addr malloc failed!")) 
@@ -232,6 +265,19 @@ task esp_host::pbs_admin_create_sq(ref nvme_cmd cmd);
       addr = sq.prp_list[0].base_addr;
       sq.set_base_addr(addr);
       cmd.sprp1 = addr;
+
+      foreach(sq.prp_list[z])begin
+        U8    prps_U8[$];
+        addr = sq.prp_list[z].base_addr;
+	turn_bit64_queue_2_bit8_queue(sq.prp_list[z].prps, prps_U8);
+        host_mem.fill_byte_data_queue_direct(addr, prps_U8.size(), prps_U8);	
+	if(sq.prp_list[z+1] != null)begin
+	  for(int i = 0; i < 8; i++)begin
+            host_mem.fill_byte_data_direct(addr + page_sz - (8-i), sq.prp_list[z+1].base_addr[i*8+:8]);
+	  end
+	end
+      end
+
     end
     
   end
@@ -239,7 +285,7 @@ endtask
 
 
 
-task esp_host::pbs_admin_create_cq(ref nvme_cmd cmd);
+task esp_host::pbs_admin_create_cq(nvme_cmd cmd);
   esp_host_cq  cq; //Register for VIP
   bit    pc    = cmd.sdw11_adm.create_iocq.PC;//Physically Contiguous
   int    qsize = cmd.sdw10_adm.create_iocq.QSIZE;
@@ -262,7 +308,7 @@ task esp_host::pbs_admin_create_cq(ref nvme_cmd cmd);
   cq.set_base_addr(addr);
   cq.set_continuous(pc);
   cq.set_qid(cqid);
-  cq.set_q_size(qsize);
+  cq.set_num_entry(qsize+1);
   
   if(pc)begin
     mem_mgr.malloc(qsize, addr, suc);
@@ -331,6 +377,20 @@ task esp_host::pbs_admin_create_cq(ref nvme_cmd cmd);
       addr = cq.prp_list[0].base_addr;
       cq.set_base_addr(addr);
       cmd.sprp1 = addr;
+
+
+      foreach(cq.prp_list[z])begin
+        U8    prps_U8[$];
+        addr = cq.prp_list[z].base_addr;
+	turn_bit64_queue_2_bit8_queue(cq.prp_list[z].prps, prps_U8);
+        host_mem.fill_byte_data_queue_direct(addr, prps_U8.size(), prps_U8);	
+	if(cq.prp_list[z+1] != null)begin
+	  for(int i = 0; i < 8; i++)begin
+            host_mem.fill_byte_data_direct(addr + page_sz - (8-i), cq.prp_list[z+1].base_addr[i*8+:8]);
+	  end
+	end
+      end
+
     end
     
   end
@@ -339,7 +399,7 @@ endtask
 
 
 
-function int esp_host::rand_pick_cq(ref nvme_cmd cmd);
+function int esp_host::rand_pick_cq(nvme_cmd cmd);
   int  found_q[$];
   int  cqid;
   int  fid;
@@ -358,7 +418,7 @@ endfunction
 
 
 
-task esp_host::pbs_io_write(ref nvme_cmd cmd);
+task esp_host::pbs_io_write(nvme_cmd cmd);
   malloc_memory_space(cmd);
   fill_data_to_host_mem(cmd);
 endtask
@@ -403,28 +463,32 @@ endfunction
 
 function esp_host::fill_cmd_to_SQ(nvme_cmd cmd);
   bit[HOST_AXI_WIDTH-1:0] addr;
-
-  addr = sq_base_addr + 64*sq_tail_ptr;//get_cmd_positon();
-  `uvm_info(get_name(), $sformatf("sq_base_addr = %0h, sq_base_addr = %0h, sq_tail_ptr = %0h", sq_base_addr, sq_base_addr, sq_tail_ptr), UVM_LOW) 
+  int  fid = cmd.mgr.fid;
+  int  sqid = cmd.sqid;
+  `uvm_info(get_name(), $sformatf("sqid = %0d", sqid), UVM_LOW) 
+  
+  addr = mgrs[fid].SQ[sqid].get_tail_addr();
+  `uvm_info(get_name(), $sformatf("fid = %0h, sqid = %0h, sq_base_addr = %0h, sq_head_addr = %0h, sq_tail_ptr = %0h", fid, sqid, mgrs[fid].SQ[sqid].get_base_addr(), mgrs[fid].SQ[sqid].get_head_addr(), mgrs[fid].SQ[sqid].get_tail_addr()), UVM_LOW) 
   foreach(cmd.SQE_DW[i])begin
     `uvm_info(get_name(), $sformatf("cmd.SQE_DW[%0d] = %0h", i, cmd.SQE_DW[i]), UVM_LOW) 
 
   end
   host_mem.fill_dw_data_array_direct(addr, cmd.SQE_DW);
-  sq_tail_ptr++;
+  mgrs[fid].SQ[sqid].update_tail(); //TODO: should be mutually exclusive??
+  `uvm_info(get_name(), $sformatf("Now tail of Function %0h SQ %0h is %0d", fid, sqid, mgrs[fid].SQ[sqid].tail), UVM_LOW) 
 endfunction
 
 
 
 task esp_host::ring_doorbell(nvme_cmd cmd, esp_func_manager mgr);
- 
-  int sq_id;
+  int fid, sqid;
   U16 sq_tail;
   
-  sq_tail = sq_tail_ptr;//mgr.get_sq_tail(sqid);
-  `uvm_info(get_name(), $sformatf("sq_tail = %0h", sq_tail), UVM_LOW) 
-  DUT.set_sq_tail(sq_tail); 
-    
+  fid  = mgr.fid;
+  sqid = cmd.sqid;
+   
+  sq_tail = mgr.SQ[sqid].get_tail();
+  DUT.set_sq_tail(fid, sqid, sq_tail); 
 endtask
 
 
@@ -441,50 +505,66 @@ endtask
 
 task esp_host::forever_monitor_interrupt();
   nvme_cpl_entry   nvme_cpl;
+  int              fq[$];
   bit              suc;
   int              fid, sqid, cid;
+  int              iv;
   int              uid;
   bit[14:0]        status;
+  int              cq_tail, cq_head;
   
 
   forever begin
     `uvm_info(get_name(), $sformatf("start to wait MSIX"), UVM_LOW) 
     wait(hvif.msix_intr_happens == 1);
     
+    fq = hvif.intr_triggered.find_index(x) with (x == 1);
+    if(fq.size() > 0)begin
+      iv = fq[0];
+      fid = msix_id_2_func[iv];
+      `uvm_info(get_name(), $sformatf("MSIX for function %0h is triigered", fid), UVM_LOW) 
+      fq.delete();
 
-    //fid = get_intr_func();
-    `uvm_info(get_name(), $sformatf("msix_intr_happens"), UVM_LOW)
-    //got the corresponding IV
-    
-    cq_tail_ptr = get_cq_tail(); //TODO check the phase bit in CQE
-    do begin
-      nvme_cpl = nvme_cpl_entry::type_id::create("nvme_cpl");
-      get_one_cqe(nvme_cpl);
-      //suc = do_host_cpl_compare();
-      
-       
-      suc  = 1;
-      if(suc)begin
-        status = nvme_cpl.get_status();
-        sqid = nvme_cpl.get_sqid();
-        cid  = nvme_cpl.get_cid();
-        uid  = find_related_cmd(fid, sqid, cid);
-        process_cmd_when_completion(uid, status);
-        host_cmd_map[uid].state = CMD_DONE;
-        `uvm_info(get_name(), "******************INIT_TEST PASS******************", UVM_NONE)
+      fq = mgrs[fid].CQ.find_index(x) with (x.iv == iv);
+      foreach(fq[cqid])begin
+        esp_host_cq   cq;
+        cq = mgrs[fid].CQ[cqid];
+        cq_tail = get_cq_tail(cq);  //TODO check the phase bit in CQE
+        cq_head = cq.get_head();   
+        while(cq_tail != cq_head) begin
+          nvme_cpl = nvme_cpl_entry::type_id::create("nvme_cpl");
+          get_one_cqe(cq, nvme_cpl);
+          //suc = do_host_cpl_compare();
+
+          suc  = 1;
+          if(suc)begin
+            status = nvme_cpl.get_status();
+            sqid = nvme_cpl.get_sqid();
+            cid  = nvme_cpl.get_cid();
+            uid  = find_related_cmd(fid, sqid, cid);
+            process_cmd_when_completion(uid, status);
+            host_cmd_map[uid].state = CMD_DONE;
+            `uvm_info(get_name(), "******************INIT_TEST PASS******************", UVM_NONE)
+          end
+        end
       end
-    end while(cq_tail_ptr != cq_head_ptr);  
-    hvif.msix_intr_happens = 0;
-    `uvm_info(get_name(), $sformatf("Handle msix_intr_happens Done"), UVM_LOW)
+      
+
+      
+        
+      hvif.msix_intr_happens = 0;
+      `uvm_info(get_name(), $sformatf("Handle msix_intr_happens Done"), UVM_LOW)
+    end
     #100ns;
+    
   end
   
 endtask
 
 
 
-function int esp_host::get_cq_tail();
-  U64        addr = cq_base_addr;
+function int esp_host::get_cq_tail(esp_host_cq cq);
+  U64        addr = cq.get_base_addr();
   bit        phase_bit;
   bit        ptr;
   U32        data[];
@@ -512,15 +592,15 @@ endfunction
 
 
 
-task esp_host::get_one_cqe(ref nvme_cpl_entry nvme_cpl);
-  U64  addr = cq_base_addr + 16*cq_head_ptr; 
+task esp_host::get_one_cqe(esp_host_cq cq, nvme_cpl_entry nvme_cpl);
+  U64  addr = cq.get_head_addr(); 
   U32  data[];
   data = new[NUM_DW_CDE];
   host_mem.take_dw_data_array_direct(addr, data);
   foreach(nvme_cpl.CQE_DW[i])
     nvme_cpl.CQE_DW[i] = data[i];
-  cq_head_ptr++;
-  `uvm_info(get_name(), $sformatf("Update the cq_head_ptr = %0h", cq_head_ptr), UVM_LOW) 
+  cq.update_head();
+  `uvm_info(get_name(), $sformatf("Update the cq_head_ptr = %0h", cq.head), UVM_LOW) 
 endtask
 
 
@@ -559,10 +639,7 @@ task esp_host::process_cmd_when_completion(int uid, bit[14:0] status);
       //IO CMD
       ESP_WRITE:      pwc_io_write(uid);
     endcase
-    
   end
-
-  
 endtask
 
 
@@ -639,17 +716,17 @@ endtask
 //endtask
 
 
-task esp_host::pbs_admin_indentify(ref nvme_cmd cmd);
+task esp_host::pbs_admin_indentify(nvme_cmd cmd);
 endtask
 
 
 
-task esp_host::pbs_admin_delete_sq(ref nvme_cmd cmd);
+task esp_host::pbs_admin_delete_sq(nvme_cmd cmd);
 endtask
 
 
 
-task esp_host::pbs_admin_delete_cq(ref nvme_cmd cmd);
+task esp_host::pbs_admin_delete_cq(nvme_cmd cmd);
 endtask
 
 

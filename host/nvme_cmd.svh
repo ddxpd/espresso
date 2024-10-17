@@ -37,8 +37,8 @@ class nvme_cmd extends uvm_object;
          int         udata_size;    //Only used by IO cmd
          int         mdata_size;    //Only used by IO cmd
 
-  local  bit         is_admin;
-  local  bit         has_data;
+         bit         is_admin;
+         bit         has_data;
 
   //For temp
          INENITFY_CNS_E  cns;
@@ -80,14 +80,10 @@ class nvme_cmd extends uvm_object;
 
        //GENERAL_PATTERN     gp;
 
-  `uvm_object_utils(nvme_cmd)
 
-  //`uvm_object_utils_begin(nvme_cmd)
-  //  `uvm_field_int      (addr, UVM_ALL_ON)
-  //  `uvm_field_queue_int(data, UVM_ALL_ON)
-  //  `uvm_field_object   (ext,  UVM_ALL_ON)
-  //  `uvm_field_string   (str,  UVM_ALL_ON)
-  //`uvm_object_utils_end
+  `uvm_object_utils_begin(nvme_cmd)
+    //`uvm_field_int      (sqid, UVM_ALL_ON)
+  `uvm_object_utils_end
 
   //-----------------------------------------------
   //             CONSTRAINT
@@ -111,6 +107,7 @@ class nvme_cmd extends uvm_object;
   extern function void        stage_1_basic_process();   //To self-setting some set auxiliary variable
   extern function void        stage_2_fill_sqe();
   extern function void        stage_3_detail_process();
+  extern function void        stage_4_pack_SQE_DW();
 
   extern function bit         if_is_admin();
   extern function bit         if_has_data();
@@ -133,6 +130,7 @@ class nvme_cmd extends uvm_object;
   extern function void        parse_opc();
   //**********************************
 
+  extern task                 wait_done(int timeout = 100000);
 endclass
 
 
@@ -264,6 +262,12 @@ endfunction
 
 
 
+function void nvme_cmd::stage_4_pack_SQE_DW();
+  pack_dws();
+endfunction
+
+
+
 
 function bit nvme_cmd::if_is_admin();
   return is_admin;
@@ -386,7 +390,32 @@ endfunction
 
 function void nvme_cmd::parse_opc();
   case({is_admin, SQE_DW[0][7:0]})
-    {1, 'h01}:  esp_opc = ESP_WRITE;
-    
+    {0, 8'h01}:  esp_opc = ESP_WRITE;
+    {0, 8'h02}:  esp_opc = ESP_READ;
+    {1, 8'h00}:  esp_opc = ESP_DELETE_SQ;
+    {1, 8'h01}:  esp_opc = ESP_CREATE_SQ;
+    {1, 8'h04}:  esp_opc = ESP_DELETE_CQ;
+    {1, 8'h05}:  esp_opc = ESP_CREATE_CQ;
+    {1, 8'h06}:  esp_opc = ESP_IDENTIFY;
   endcase
 endfunction
+
+
+
+task nvme_cmd::wait_done(int timeout = 100000);
+  bit   suc;
+  int   tick;
+
+  do begin
+    if(state == CMD_DONE)begin
+      suc = 1;
+    end
+    else begin
+      #100ns;
+      tick += 100;
+    end
+  end while(tick < timeout && !suc);
+
+  if(suc)
+    `uvm_fatal(get_name(), $sformatf("Timeout %0d ns for cmd uid = %0d", timeout, uid)) 
+endtask
