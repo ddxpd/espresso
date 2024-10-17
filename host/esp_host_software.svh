@@ -27,8 +27,8 @@ class esp_host extends uvm_component;
   extern function        new(string name="esp_host", uvm_component parent); 
   extern task            main_phase(uvm_phase phase);
 
-  extern task            post_cmd(esp_func_manager mgr = null, ref nvme_cmd cmd);
-  extern function        pick_rand_mgr(ref nvme_cmd cmd);
+  extern task            post_cmd(nvme_cmd cmd, esp_func_manager mgr = null);
+  extern function        pick_rand_mgr(nvme_cmd cmd);
  
   extern function        malloc_memory_space(nvme_cmd cmd);
   extern function        fill_data_to_host_mem(nvme_cmd cmd);
@@ -36,19 +36,19 @@ class esp_host extends uvm_component;
   extern task            ring_doorbell(nvme_cmd cmd, esp_func_manager mgr);
   extern task            forever_monitor_interrupt();
   extern function int    get_cq_tail();
-  extern task            get_one_cqe(ref nvme_cpl_entry nvme_cpl);
+  extern task            get_one_cqe(nvme_cpl_entry nvme_cpl);
   
      
   extern function int    find_related_cmd(int fid, int sqid, int cid); 
-  extern function int    rand_pick_cq(ref nvme_cmd cmd);
+  extern function int    rand_pick_cq(nvme_cmd cmd);
 
   //Process before submission(pbs)
-  extern task            pbs_admin_indentify(ref nvme_cmd cmd);
-  extern task            pbs_io_write(ref nvme_cmd cmd);
-  extern task            pbs_admin_delete_sq(ref nvme_cmd cmd);
-  extern task            pbs_admin_create_sq(ref nvme_cmd cmd);
-  extern task            pbs_admin_delete_cq(ref nvme_cmd cmd);
-  extern task            pbs_admin_create_cq(ref nvme_cmd cmd);
+  extern task            pbs_admin_indentify(nvme_cmd cmd);
+  extern task            pbs_io_write(nvme_cmd cmd);
+  extern task            pbs_admin_delete_sq(nvme_cmd cmd);
+  extern task            pbs_admin_create_sq(nvme_cmd cmd);
+  extern task            pbs_admin_delete_cq(nvme_cmd cmd);
+  extern task            pbs_admin_create_cq(nvme_cmd cmd);
 
   extern task            process_cmd_when_completion(int uid, bit[14:0] status);
   //Process when compeletion(pwc)
@@ -104,7 +104,7 @@ endfunction
 
 
 
-task esp_host::post_cmd(esp_func_manager mgr = null, ref nvme_cmd cmd);
+task esp_host::post_cmd(nvme_cmd cmd, esp_func_manager mgr = null);
 
   if(mgr == null)begin
     pick_rand_mgr(cmd);
@@ -112,7 +112,7 @@ task esp_host::post_cmd(esp_func_manager mgr = null, ref nvme_cmd cmd);
   else begin
     cmd.mgr = mgr;
   end
-  `uvm_info("", $sformatf("cmd.mgr.fid = %0h", cmd.mgr.fid), UVM_LOW) 
+  `uvm_info("", $sformatf("Assign cmd to fid = %0h", cmd.mgr.fid), UVM_LOW) 
 
   //SQE_DW is not packed yet
   cmd.stage_0_process_user_ctrl();
@@ -141,7 +141,7 @@ endtask
 
 
 
-function esp_host::pick_rand_mgr(ref nvme_cmd cmd);
+function esp_host::pick_rand_mgr(nvme_cmd cmd);
   esp_func_manager   mgr_q[$];
   if(mgrs.size() == 0)
     `uvm_error(get_name(), $sformatf("There is no function manager could be chosen."))
@@ -154,7 +154,7 @@ endfunction
 
 
 
-task esp_host::pbs_admin_create_sq(ref nvme_cmd cmd);
+task esp_host::pbs_admin_create_sq(nvme_cmd cmd);
   esp_host_sq  sq; //Register for VIP
   bit    pc    = cmd.sdw11_adm.create_iosq.PC;//Physically Contiguous
   int    qsize = cmd.sdw10_adm.create_iosq.QSIZE;
@@ -272,7 +272,7 @@ endtask
 
 
 
-task esp_host::pbs_admin_create_cq(ref nvme_cmd cmd);
+task esp_host::pbs_admin_create_cq(nvme_cmd cmd);
   esp_host_cq  cq; //Register for VIP
   bit    pc    = cmd.sdw11_adm.create_iocq.PC;//Physically Contiguous
   int    qsize = cmd.sdw10_adm.create_iocq.QSIZE;
@@ -387,7 +387,7 @@ endtask
 
 
 
-function int esp_host::rand_pick_cq(ref nvme_cmd cmd);
+function int esp_host::rand_pick_cq(nvme_cmd cmd);
   int  found_q[$];
   int  cqid;
   int  fid;
@@ -406,7 +406,7 @@ endfunction
 
 
 
-task esp_host::pbs_io_write(ref nvme_cmd cmd);
+task esp_host::pbs_io_write(nvme_cmd cmd);
   malloc_memory_space(cmd);
   fill_data_to_host_mem(cmd);
 endtask
@@ -563,7 +563,7 @@ endfunction
 
 
 
-task esp_host::get_one_cqe(ref nvme_cpl_entry nvme_cpl);
+task esp_host::get_one_cqe(nvme_cpl_entry nvme_cpl);
   U64  addr = cq_base_addr + 16*cq_head_ptr; 
   U32  data[];
   data = new[NUM_DW_CDE];
@@ -690,17 +690,17 @@ endtask
 //endtask
 
 
-task esp_host::pbs_admin_indentify(ref nvme_cmd cmd);
+task esp_host::pbs_admin_indentify(nvme_cmd cmd);
 endtask
 
 
 
-task esp_host::pbs_admin_delete_sq(ref nvme_cmd cmd);
+task esp_host::pbs_admin_delete_sq(nvme_cmd cmd);
 endtask
 
 
 
-task esp_host::pbs_admin_delete_cq(ref nvme_cmd cmd);
+task esp_host::pbs_admin_delete_cq(nvme_cmd cmd);
 endtask
 
 

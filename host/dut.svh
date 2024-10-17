@@ -31,7 +31,7 @@ class nvme_dut extends uvm_component;
   extern task            forever_monitor_doorbell();
   extern task            forever_handle_cmd();
   extern function        set_sq_tail(int ta);
-  extern task            read_sqe(ref U32 DW[], ref esp_host_sq sq);
+  extern task            read_sqe(esp_host_sq sq, ref U32 DW[]);
   extern task            cmd_handle(nvme_cmd cmd);
   extern task            read_data(XFR_INFO  xfr_q[$], ref U8 data[$]);
   extern function        print_data(ref U8 data[$]);
@@ -41,7 +41,7 @@ class nvme_dut extends uvm_component;
   extern task            io_write_handling(nvme_cmd cmd);
   extern task            io_read_handling(nvme_cmd cmd);
 
-  extern function        get_prp(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
+  extern function        get_prp(nvme_cmd cmd, XFR_INFO xfr_q[$]);
 endclass
 
 
@@ -93,7 +93,7 @@ task nvme_dut::forever_monitor_doorbell();
         `uvm_info(get_name(), $sformatf("Now fetching the SQ(fid, sqid) =(%0h, %0h), sq_head = %0h, sq_tail = %0h", 
                                          fid, sqid, sq.head, sq.tail), UVM_LOW)
         //read SQ Entry
-        read_sqe(SQE, sq);
+        read_sqe(sq, SQE);
         cmd.SQE_DW = SQE;
         //****** TODO should be in a function
         if(sq.if_admin_sq())
@@ -126,7 +126,7 @@ endfunction
 
 
 
-task nvme_dut::read_sqe(ref U32 DW[], ref esp_host_sq sq);
+task nvme_dut::read_sqe(esp_host_sq sq, ref U32 DW[]);
   U64  addr = sq.get_head_addr();
 
   `uvm_info(get_name(), $sformatf("Current cmd addr = %0h", addr), UVM_LOW) 
@@ -308,7 +308,7 @@ endtask
 
 
 
-function nvme_dut::get_prp(ref nvme_cmd cmd, XFR_INFO xfr_q[$]);
+function nvme_dut::get_prp(nvme_cmd cmd, XFR_INFO xfr_q[$]);
   int    mps     = 12; //TODO
   int    page_sz = 2**(mps);
   int    nsid    = cmd.nsid;

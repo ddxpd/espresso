@@ -14,7 +14,7 @@ endclass
 
 class base_q extends uvm_object;
   
-  typedef struct {
+  typedef struct packed{
     U32    num_entry;
     U32    num_dw;
     U32    num_byte;
@@ -41,7 +41,7 @@ class base_q extends uvm_object;
     `uvm_field_int      (head,           UVM_ALL_ON)
     `uvm_field_int      (is_prplist,     UVM_ALL_ON)
     `uvm_field_int      (entry_size,     UVM_ALL_ON)
-    //`uvm_field_int      (qsize,          UVM_ALL_ON)
+    `uvm_field_int      (qsize,          UVM_ALL_ON)
     `uvm_field_enum     (QUEUE_STAT_E, state, UVM_ALL_ON)
   `uvm_object_utils_end
 
@@ -259,7 +259,7 @@ class esp_host_sq extends base_q;
   `uvm_object_utils_end
 
   extern function        new(string name = "esp_host_sq");
-  extern function void   add_cq(ref esp_host_cq cq);
+  extern function void   add_cq(esp_host_cq cq);
 endclass
 
 
@@ -270,11 +270,11 @@ endfunction
 
 
 
-function void esp_host_sq::add_cq(ref esp_host_cq cq);
+function void esp_host_sq::add_cq(esp_host_cq cq);
   if(CQ == null)begin
     CQ = cq;
-    //cqid = CQ.qid;
-    //cq.add_sq(this);
+    cqid = CQ.qid;
+    cq.add_sq(this);
   end
   else 
     `uvm_error(get_name(), $sformatf("CQ is already set for this SQ.")) 
@@ -295,7 +295,7 @@ class esp_host_cq extends base_q;
 
 
   extern function new(string name = "esp_host_cq");
-  extern function add_sq(ref esp_host_sq sq);
+  extern function add_sq(esp_host_sq sq);
 endclass
 
 
@@ -306,7 +306,7 @@ endfunction
 
 
 
-function esp_host_cq::add_sq(ref esp_host_sq sq);
+function esp_host_cq::add_sq(esp_host_sq sq);
   int  qid = sq.qid;
   `uvm_info(get_name(), $sformatf("qid = %0d", qid), UVM_LOW) 
   if(SQ[qid] == null)
