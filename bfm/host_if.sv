@@ -6,13 +6,25 @@ interface host_intf();
 
   host_memory  host_mem;
   bit          msix_intr_happens;
-  U64          test;
+  U64          msix_addr[$];
+  U64          msix_data[U64];   //KEY is msix_addr;
+  int          msix_id[U64];     //KEY is msix_addr;
+  bit          intr_triggered[int]; //KEY is msix_addr;
   
 
 
-  function clear_msix_intr();
+  function void clear_msix_intr();
     msix_intr_happens = 0; 
   endfunction 
+
+
+
+  function automatic void add_msix_vector(int id, U64 addr, U64 data);
+    msix_addr.push_back(addr);
+    msix_data[addr] = data;
+    msix_id[addr]   = id;
+  endfunction
+
 
   
   function automatic void fill_byte_data_direct(U64 addr, U8 data);
@@ -22,9 +34,14 @@ interface host_intf();
 
 
   function automatic void fill_dw_data_direct(U64 addr, U32 data);
-    $display("addr = %0h, data = %0h", addr, data); 
-    if(addr == 'h00000001 && data == 'h12345678)begin
+    U64 fq[$];
+    int id;
+
+    fq = msix_addr.find(x) with ( x == addr );
+    if(fq.size() == 1)begin
       msix_intr_happens = 1; 
+      id = msix_id[addr];
+      intr_triggered[id] = 1;
       $display("MSIX triggered");
     end
     host_mem.fill_dw_data_direct(addr, data);

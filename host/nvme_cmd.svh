@@ -37,8 +37,8 @@ class nvme_cmd extends uvm_object;
          int         udata_size;    //Only used by IO cmd
          int         mdata_size;    //Only used by IO cmd
 
-  local  bit         is_admin;
-  local  bit         has_data;
+         bit         is_admin;
+         bit         has_data;
 
   //For temp
          INENITFY_CNS_E  cns;
@@ -390,8 +390,13 @@ endfunction
 
 function void nvme_cmd::parse_opc();
   case({is_admin, SQE_DW[0][7:0]})
-    {1, 'h01}:  esp_opc = ESP_WRITE;
-    
+    {0, 8'h01}:  esp_opc = ESP_WRITE;
+    {0, 8'h02}:  esp_opc = ESP_READ;
+    {1, 8'h00}:  esp_opc = ESP_DELETE_SQ;
+    {1, 8'h01}:  esp_opc = ESP_CREATE_SQ;
+    {1, 8'h04}:  esp_opc = ESP_DELETE_CQ;
+    {1, 8'h05}:  esp_opc = ESP_CREATE_CQ;
+    {1, 8'h06}:  esp_opc = ESP_IDENTIFY;
   endcase
 endfunction
 

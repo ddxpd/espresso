@@ -32,7 +32,8 @@ function void base_test::build_phase(uvm_phase phase);
   if(!uvm_config_db#(virtual host_intf)::get(this, "*" ,"host_vif", hvif))
     `uvm_fatal(get_name(), $sformatf("Can not get the interface")) 
   `uvm_info(get_name(), $sformatf("got the interface" ), UVM_LOW)  
-  
+  hvif.add_msix_vector(0, 'h00000001, 'h10000001); 
+  hvif.add_msix_vector(1, 'h00000002, 'h20000002); 
 endfunction
 
 
