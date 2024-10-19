@@ -19,8 +19,10 @@ package host_pkg;
 
   `include "esp_host_mgr.svh"
   `include "base_q.svh"
+  `include "nvme_msix_vector.svh"
+  `include "nvme_namespace.svh"
   `include "nvme_cmd.svh"
-  `include "esp_host_sq.svh"
+  //`include "esp_host_sq.svh"
   `include "nvme_cpl_entry.svh"
   `include "dut.svh"
   `include "esp_host_software.svh"

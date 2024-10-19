@@ -460,7 +460,7 @@ typedef struct packed {
 
 
 typedef struct packed {
-  bit [15:08] RSVD0; //
+  bit [31:08] RSVD0; // turn 15 to 31 //TODO
   bit [7:0] CSVI; // Controller State Version Index 
 } S_CMD_GET_CTLR_STATE_MNGT_OP_DWORD_11;
 
@@ -709,7 +709,7 @@ typedef struct packed {
 } S_CMD_DWORD_8_9;
 
 
-typedef union {
+typedef union packed {
   S_CMD_ABORT_DWORD_10                abort;
   S_CMD_CAP_MNGT_DWORD_10             cap_mngt;
   S_CMD_CTLRER_DATA_Q_DWORD_10        ctrler_data_q;
@@ -742,7 +742,7 @@ typedef union {
 } S_ACMD_DWORD_10;
 
 
-typedef union {
+typedef union packed {
   S_CMD_CAP_MNGT_DWORD_11                cap_mngt;
   S_CMD_CREATE_CTLRER_DATA_Q_DWORD_11    create_ctrler_data_q;
   S_CMD_DELETE_CTLRER_DATA_Q_DWORD_11    delete_ctrler_data_q;
@@ -768,7 +768,7 @@ typedef union {
 } S_ACMD_DWORD_11;
 
 
-typedef union {
+typedef union packed {
   S_CMD_CAP_MNGT_DWORD_12             cap_mngt;
   S_CMD_CREATE_CTLRER_DATA_Q_DWORD_12 create_ctrler_data_q;
   S_CMD_GET_LOG_PAGE_DWORD_12         get_logpage;
@@ -779,14 +779,14 @@ typedef union {
 } S_ACMD_DWORD_12;
 
 
-typedef union {
+typedef union packed {
   S_CMD_GET_LOG_PAGE_DWORD_13         get_logpage;
   S_CMD_MIGRATION_RCV_13              migration_rcv;
   U32                                 dw;
 } S_ACMD_DWORD_13;
 
 
-typedef union {
+typedef union packed {
   S_CMD_GET_FEATURE_DWORD_14          get_feature;
   S_CMD_GET_LOG_PAGE_DWORD_14         get_logpage;
   S_CMD_IDENTIFY_DWORD_14             identify;
@@ -798,7 +798,7 @@ typedef union {
 } S_ACMD_DWORD_14;
 
 
-typedef union {
+typedef union packed {
   S_CMD_DEVICE_SELF_TEST_DWORD_15     device_self_test;
   S_CMD_MIGRATION_RCV_15              migration_rcv;
   S_CMD_SET_CTLR_STATE_DWORD_15       set_ctrl_state;
@@ -1234,7 +1234,7 @@ typedef struct packed {
   bit [15:00] LBAT; // Logical Block Application Tag 
 } S_WRITE_ZEROES_DWORD_15;
 
-typedef union {
+typedef union packed {
   S_COMPARE_DWORD_2               compare;
   S_COPY_DWORD_2                  copy;
   S_READ_DWORD_2                  read;
@@ -1244,7 +1244,7 @@ typedef union {
   U32                             dw;
 } S_IOCMD_DWORD_2;
 
-typedef union {
+typedef union packed {
   S_COMPARE_DWORD_3               compare; 
   S_COPY_DWORD_3                  copy;
   S_READ_DWORD_3                  read;
@@ -1255,7 +1255,7 @@ typedef union {
 } S_IOCMD_DWORD_3;
 
 
-typedef union {
+typedef union packed {
   S_CANCEL_DWORD_10               cancel;
   S_IO_MANAGEMENT_RCV_DWORD_10    io_mng_rcv;
   S_IO_MANAGEMENT_SEND_DWORD_10   io_mng_send;
@@ -1273,7 +1273,7 @@ typedef union {
   U32                             dw;
 } S_IOCMD_DWORD_10;
 
-typedef union {
+typedef union packed {
   S_CANCEL_DWORD_11               cancel;
   S_IO_MANAGEMENT_RCV_DWORD_11    io_mng_rcv;
   S_RESERVATION_REPORT_DWORD_11   rsv_report;
@@ -1287,7 +1287,7 @@ typedef union {
   U32                             dw;
 } S_IOCMD_DWORD_11;
 
-typedef union {
+typedef union packed {
   S_COMPARE_DWORD_12              compare;
   S_COPY_DWORD_12                 copy;
   S_READ_DWORD_12                 read;
@@ -1297,7 +1297,7 @@ typedef union {
   U32                             dw;
 } S_IOCMD_DWORD_12;
 
-typedef union {
+typedef union packed {
   S_COMPARE_DWORD_13                    compare;
   S_COPY_DWORD_13                       copy;
   S_READ_CTYPE0_DWORD_13                read_ctype0;
@@ -1311,7 +1311,7 @@ typedef union {
   U32                                   dw;
 } S_IOCMD_DWORD_13;
 
-typedef union {
+typedef union packed {
   S_COMPARE_DWORD_14                    compare;
   S_COPY_DWORD_14                       copy;
   S_READ_DWORD_14                       read;
@@ -1321,7 +1321,7 @@ typedef union {
   U32                                   dw;
 } S_IOCMD_DWORD_14;
 
-typedef union {
+typedef union packed {
   S_COMPARE_DWORD_15                    compare;
   S_COPY_DWORD_15                       copy;
   S_READ_DWORD_15                       read;
@@ -1417,3 +1417,12 @@ typedef struct packed {
   bit [00:00] LBACZ; // LBAs Cleared to Zero 
 } S_CPL_WRITE_ZEROES_DWORD_0;
 
+
+
+
+//TODO ZHB for test. Should be romoved
+
+typedef struct packed {
+  U64 addr;
+  int size;
+} XFR_INFO;

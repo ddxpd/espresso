@@ -1,54 +1,331 @@
+typedef class esp_host_cq;
+typedef class esp_host_sq;
+
+
+class prplist;
+  U64    base_addr;
+  U64    prps[$];   //Not include the next prplist base addr
+
+  function new();
+  endfunction
+endclass
+
+
+
 class base_q extends uvm_object;
-  `uvm_object_utils(base_q)
+  
+  typedef struct packed{
+    U32    num_dw;
+    U32    num_byte;
+  } S_QSIZE;
 
-        int     qid;
-        U32     base_addr;
-	int     entry_size;
-        int     num_entries;
+              QUEUE_STAT_E   state;
+              U64       base_addr;
+              bit       continuous;
+              U32       qid;
+              S_QSIZE   qsize;
+              int       entry_size;   // Unit:Byte
+              U32       num_entry;    // 1 based. Unlike the spec.
+              U32       tail = 0;  
+              U32       head = 0;  
 
-  local U16     tail_ptr;
-  local U16     head_ptr;
-   
-        bit     is_creating;
-        bit     is_deleting;
+              bit       is_prplist;
+	      prplist   prp_list[$];   //Avalid when prp 'is_prplist = 1'
+
+
+  `uvm_object_utils_begin(base_q)
+    `uvm_field_int      (qid,            UVM_ALL_ON)
+    `uvm_field_int      (base_addr,      UVM_ALL_ON)
+    `uvm_field_int      (continuous,     UVM_ALL_ON)
+    `uvm_field_int      (tail,           UVM_ALL_ON)
+    `uvm_field_int      (head,           UVM_ALL_ON)
+    `uvm_field_int      (is_prplist,     UVM_ALL_ON)
+    `uvm_field_int      (entry_size,     UVM_ALL_ON)
+    `uvm_field_int      (num_entry,      UVM_ALL_ON)
+    `uvm_field_int      (qsize,          UVM_ALL_ON)
+    `uvm_field_enum     (QUEUE_STAT_E, state, UVM_ALL_ON)
+  `uvm_object_utils_end
+
+
+
+  extern function          new(string name="base_q");
+  extern function U32      get_num_vld_entry();
+  extern function U32      get_num_avail_entry();   
+
+  extern function bit      if_q_full();
+  extern function bit      if_q_empty();
+  extern function void     update_tail(int incr = 1);
+  extern function void     update_head(int incr = 1);
+  extern function bit      incr_tail();
+
+  extern function int      get_tail();
+  extern function int      get_head();
+  //extern function int      get_q_size();
+  extern function U64      get_tail_addr();
+  extern function U64      get_head_addr();
+  extern function U64      get_base_addr();
+
+  extern function void     set_tail(int tail);
+  extern function void     set_head(int head);
+  extern function void     set_base_addr(U64 addr);
+  extern function void     set_continuous(bit pc);
+  extern function void     set_qid(int qid);
+  extern function void     set_num_entry(int num_entry);
+  extern function void     reset_ptr();
+  
+  extern function bit      if_admin_sq();
 
   /*
-  extern function new (string name = "");
-
   //Question: Is it necessary to hook host memory on Q so that we can dump
   //Queue contents?
-  //host_mem mem_h;
   //extern function void dump_q();
-
-  //APIs for users
-  extern function int get_tail_ptr();
-  extern function int get_head_ptr();
-  extern function int get_num_entries();
-  extern function int get_entry_size();
-  extern function int get_q_size();
-  extern function bit is_q_empty();
-  extern function bit is_q_full();
-  extern function bit is_admin_q();
-
-  //APIs for developers
-  //return if it is successful
-  extern function bit update_tail_ptr(int num);
-  extern function bit update_head_ptr(int num);
   */
+
 endclass
 
-class sq extends base_q;
+
+
+function base_q::new(string name="base_q");
+  super.new(name);
+endfunction
+
+
+
+function bit base_q::if_admin_sq();
+  return (qid == 0);
+endfunction
+
+
+
+function U32 base_q::get_num_vld_entry();
+  U32 num_vld_entry;
+
+  if (tail >= head) begin
+    num_vld_entry = tail - head;
+  end else begin
+    num_vld_entry = tail + (num_entry - head);
+  end
+  return num_vld_entry;
+endfunction
+
+
+
+function U32 base_q::get_num_avail_entry();
+  U32 num_vld, num_avail;
+
+  num_vld   = get_num_vld_entry();
+  num_avail = num_entry - 1 - num_vld;
+  return num_avail;
+endfunction
+
+
+
+function bit base_q::if_q_full();
+  bit is_full;
+  U32 num_avail;
+
+  num_avail = get_num_avail_entry();
+  is_full   = (num_avail == 0) ? 1 : 0;
+  return is_full;
+endfunction
+
+
+
+function bit base_q::if_q_empty();
+  return (head == tail);
+endfunction
+
+
+
+function bit base_q::incr_tail();
+  bit is_full;
+  bit suc = 0;
+
+  is_full = if_q_full();
+
+  if (is_full) begin
+    suc = 0;
+  end else begin
+    if (tail == (num_entry - 1)) begin
+      tail = 0;
+    end else begin
+      tail++;
+    end
+    suc = 1;
+  end
+
+  return suc;
+endfunction
+
+
+
+function void base_q::update_head(int incr = 1); //TODO wraparound
+  head += incr;
+endfunction
+
+
+
+function void base_q::update_tail(int incr = 1); //TODO wraparound
+  tail += incr;
+endfunction
+
+
+
+function void base_q::set_tail(int tail);
+  this.tail = tail;
+endfunction
+
+
+
+function void base_q::set_head(int head);
+  this.head = head;
+endfunction
+
+
+
+function int base_q::get_tail();
+  return tail;
+endfunction
+
+
+
+function int base_q::get_head();
+  return head;
+endfunction
+
+
+
+function U64 base_q::get_tail_addr();
+  return base_addr + tail * entry_size;
+endfunction
+
+
+
+function U64 base_q::get_head_addr();
+  return base_addr + head * entry_size;
+endfunction
+
+
+
+function U64 base_q::get_base_addr();
+  return base_addr;
+endfunction
+
+
+
+function void base_q::set_base_addr(U64 addr);
+  base_addr = addr;
+endfunction
+
+
+
+function void base_q::set_continuous(bit pc);
+  continuous = pc;
+endfunction
+
+
+
+function void base_q::set_qid(int qid);
+  this.qid = qid;
+endfunction
+
+
+
+function void base_q::set_num_entry(int num_entry);
+  this.num_entry = num_entry;
+  qsize.num_byte = num_entry * entry_size; 
+  qsize.num_dw   = qsize.num_byte / 4; 
+endfunction
+
+
+
+function void base_q::reset_ptr();
+  head = 0;
+  tail = 0;
+endfunction
+
+
+
+
+
+
+
+
+
+
+class esp_host_sq extends base_q;
   
-        int cqid; 
+  int cqid; 
+  esp_host_cq   CQ;
 
-  `uvm_object_utils(sq)
+  `uvm_object_utils_begin(esp_host_sq)
+    `uvm_field_int      (cqid,      UVM_ALL_ON)
+    `uvm_field_object   (CQ,        UVM_ALL_ON)
+  `uvm_object_utils_end
 
-  //extern function new (string name = "");
+  extern function        new(string name = "esp_host_sq");
+  extern function void   add_cq(esp_host_cq cq);
 endclass
 
 
-class cq extends base_q;
-  `uvm_object_utils(cq)
 
-  //extern function new (string name = "");
+function esp_host_sq::new(string name = "esp_host_sq");
+  super.new(name);
+  entry_size = 64;
+endfunction
+
+
+
+function void esp_host_sq::add_cq(esp_host_cq cq);
+  if(CQ == null)begin
+    CQ = cq;
+    cqid = CQ.qid;
+    cq.add_sq(this);
+  end
+  else 
+    `uvm_error(get_name(), $sformatf("CQ is already set for this SQ.")) 
+endfunction
+
+
+
+
+
+
+class esp_host_cq extends base_q;
+
+  esp_host_sq  SQ[int];
+  int          iv;
+
+  `uvm_object_utils_begin(esp_host_cq)
+    `uvm_field_int   (iv,        UVM_ALL_ON)
+  `uvm_object_utils_end
+
+
+  extern function           new(string name = "esp_host_cq");
+  extern function void      add_sq(esp_host_sq sq);
+  extern function void      set_iv(int iv);
 endclass
+
+
+
+function esp_host_cq::new(string name = "esp_host_cq");
+  super.new(name);
+  entry_size = 16;
+endfunction
+
+
+
+function void esp_host_cq::add_sq(esp_host_sq sq);
+  int  qid = sq.qid;
+  `uvm_info(get_name(), $sformatf("qid = %0d", qid), UVM_LOW) 
+  if(SQ[qid] == null)
+    SQ[qid] = sq;
+  else
+    `uvm_error(get_name(), $sformatf("SQ is already set for SQ %0h.", sq.qid)) 
+endfunction
+
+
+
+function void esp_host_cq::set_iv(int iv);
+  this.iv = iv;
+endfunction
