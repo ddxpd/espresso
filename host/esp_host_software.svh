@@ -761,7 +761,7 @@ task esp_host::write_nvme_cap(int mgr_id, int start_dw, U32 data[]);
   U8  data_bt[];
 
   if (!mgrs.exists(mgr_id)) begin
-    `uvm_error(get_name(), $sformatf("mgr-%0d does not exist in mgrs"))
+    `uvm_error(get_name(), $sformatf("mgr-%0d does not exist in mgrs", mgr_id))
   end else begin
     baddr = mgrs[mgr_id].bar_range[0].baddr;
     addr  = baddr + start_dw * 4;

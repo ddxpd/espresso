@@ -17,10 +17,10 @@ package host_pkg;
     ST_DONE
   } E_CTRLER_STATE;
 
-  `include "esp_host_mgr.svh"
   `include "base_q.svh"
   `include "nvme_msix_vector.svh"
   `include "nvme_namespace.svh"
+  `include "esp_host_mgr.svh"
   `include "nvme_cmd.svh"
   //`include "esp_host_sq.svh"
   `include "nvme_cpl_entry.svh"
