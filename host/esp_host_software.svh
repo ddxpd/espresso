@@ -51,6 +51,8 @@ class esp_host extends uvm_component;
 
   extern task            pwc_identify_cns_0(int uid);
 
+  extern function void   set_host_ranges(int mgr_id, bit [63:0] baddr[], bit [63:0] size[], ref esp_host_mgr mgr);
+  extern task            write_nvme_cap(int mgr_id, int start_dw, U32 data[]);
 
 endclass
 

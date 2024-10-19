@@ -6,7 +6,7 @@ class host_memory;
 
 
   extern function             new(string name="host_memory");
-  extern function             init();
+  extern function void        init();
   //extern function void        malloc_space(int size, ref U64 addr);
   extern function void        fill_byte_data_direct(U64 addr, U8 data);
   extern function void        fill_dw_data_direct(U64 addr, U32 data);
@@ -32,7 +32,7 @@ endfunction
 
 
 
-function host_memory::init();
+function void host_memory::init();
   for(int i = 0; i < 'h10_0000; i++)
     mem[i] = 0;
 endfunction
