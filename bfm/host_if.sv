@@ -14,7 +14,13 @@ interface host_intf();
 
   task send_wr_trans(U64 addr, U8 data[]);
     foreach (data[i]) begin
-      fill_byte_data_direct(addr, data[i]);
+      fill_byte_data_direct(addr+i, data[i]);
+    end
+  endtask
+
+  task automatic send_rd_trans(U64 addr, ref U8 data[]);
+    foreach (data[i]) begin
+      take_byte_data_direct(addr+i, data[i]);
     end
   endtask
 

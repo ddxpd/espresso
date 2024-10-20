@@ -22,6 +22,7 @@ package host_pkg;
   `include "nvme_namespace.svh"
   `include "esp_host_mgr.svh"
   `include "nvme_cmd.svh"
+  `include "esp_printer.sv"
   //`include "esp_host_sq.svh"
   `include "nvme_cpl_entry.svh"
   `include "dut.svh"

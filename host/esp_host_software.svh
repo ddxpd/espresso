@@ -1,18 +1,20 @@
 class esp_host extends uvm_component;
   `uvm_component_utils(esp_host)
 
-  host_memory    host_mem;
+  host_memory           host_mem;
   host_memory_manager   mem_mgr;
-  nvme_dut       DUT;
-  nvme_cmd       cmd_waiting_q[$];
-  host_vif       hvif;
-  nvme_cmd       host_cmd_map[int];     //KEY is unique ID
+  nvme_dut              DUT;
+  nvme_cmd              cmd_waiting_q[$];
+  host_vif              hvif;
+  nvme_cmd              host_cmd_map[int];     //KEY is unique ID
+
+  esp_printer           printer;
 
   //For temporary
-  int            msix_id_2_func[int];   
+  int                   msix_id_2_func[int];   
 
 
-  esp_host_mgr    mgrs[U32];     // KEY is function id
+  esp_host_mgr           mgrs[U32];     // KEY is function id
 
   extern function        new(string name="esp_host", uvm_component parent); 
   extern task            main_phase(uvm_phase phase);
@@ -53,7 +55,7 @@ class esp_host extends uvm_component;
 
   extern function void   set_host_ranges(int mgr_id, bit [63:0] baddr[], bit [63:0] size[], ref esp_host_mgr mgr);
   extern task            write_nvme_cap(int mgr_id, int start_dw, U32 data[]);
-
+  extern task            read_nvme_cap(int mgr_id, int start_dw, int num_dw, ref U32 data[]);
 endclass
 
 
@@ -112,7 +114,7 @@ function esp_host::new(string name="esp_host", uvm_component parent);
   mgrs[mgr.fid].msix_vector[1] = msix;
   msix_id_2_func[1] = mgr.fid;
   
-
+  printer = esp_printer::type_id::create("printer", this);
 endfunction
 
 
@@ -778,5 +780,46 @@ task esp_host::write_nvme_cap(int mgr_id, int start_dw, U32 data[]);
   end
 
   hvif.send_wr_trans(addr, data_bt);
+  printer.print_cap("write", mgr_id, start_dw, data);
+  mgrs[mgr_id].update_cap(start_dw, data.size(), data);
+endtask
+
+
+task esp_host::read_nvme_cap(int mgr_id, int start_dw, int num_dw, ref U32 data[]);
+  U64 baddr, addr;
+  int num_bt;
+  U8  data_bt[];
+
+  if (!mgrs.exists(mgr_id)) begin
+    `uvm_error(get_name(), $sformatf("mgr-%0d does not exist in mgrs", mgr_id))
+  end else begin
+    baddr = mgrs[mgr_id].bar_range[0].baddr;
+    addr  = baddr + start_dw * 4;
+  end
+
+  data = new[num_dw];
+  num_bt = num_dw * 4;
+  data_bt = new[num_bt];
+
+  hvif.send_rd_trans(addr, data_bt);
+
+  foreach (data_bt[i]) begin
+    case(i%4)
+      0: begin
+           data[i/4][ 7: 0] = data_bt[i];
+         end
+      1: begin
+           data[i/4][15: 8] = data_bt[i];
+         end
+      2: begin
+           data[i/4][23:16] = data_bt[i];
+         end
+      3: begin
+           data[i/4][31:24] = data_bt[i];
+         end
+    endcase
+  end
+  printer.print_cap("read", mgr_id, start_dw, data);
+  mgrs[mgr_id].update_cap(start_dw, data.size(), data);
 endtask
 
