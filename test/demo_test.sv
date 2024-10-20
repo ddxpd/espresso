@@ -66,6 +66,15 @@ task demo_test::main_phase(uvm_phase phase);
   end
 
   foreach (mgrs[i]) begin
+    foreach (mgrs[i].bar_range[bar]) begin
+      hvif.pcie_range_baddr[mgrs[i].mgr_id][bar] = mgrs[i].bar_range[bar].baddr;
+      hvif.pcie_range_size[mgrs[i].mgr_id][bar]  = mgrs[i].bar_range[bar].size;
+    end
+  end
+  hvif.pcie_enum_done = 1;
+  #10ns;
+
+  foreach (mgrs[i]) begin
     U32 rdata[];
     host.read_nvme_cap(i, 0, 2, rdata);
     host.read_nvme_cap(i, 2, 1, rdata);

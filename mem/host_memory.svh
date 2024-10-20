@@ -15,7 +15,7 @@ class host_memory;
   extern function void        fill_dw_data_queue_direct(U64 addr, int byte_size, ref U32 data[$]);
   extern function void        fill_byte_data_queue_direct(U64 addr, int byte_size, ref U8 data[$]);
 
-  extern function void        take_byte_data_direct(U64 addr, U8 data);
+  extern function void        take_byte_data_direct(U64 addr, ref U8 data);
   extern function void        take_dw_data_direct(U64 addr, U32 data);
   extern function void        take_byte_data_array_direct(U64 addr, ref U8 data[]);
   extern function void        take_dw_data_array_direct(U64 addr, ref U32 data[]);
@@ -118,7 +118,7 @@ endfunction
 
 
 
-function void host_memory::take_byte_data_direct(U64 addr, U8 data);
+function void host_memory::take_byte_data_direct(U64 addr, ref U8 data);
   data = mem[addr];
   $display("take_byte_data_direct, mem[%0h] = %0h, got U8 data = %0h", addr, mem[addr], data);
 endfunction

@@ -5,16 +5,16 @@ class nvme_dut extends uvm_component;
     U64    addr;
     U64    data;
   } S_MSIX_VECTOR;
-  
+
           S_MSIX_VECTOR  msix_vector[int];   //TODO temporary
 
           nvme_cmd       unhandle_cmd_q[$];
 
           host_vif       hvif;
-          
-	  nvme_namespace     ns[U32];         //KEY is namespace ID
-	  esp_host_sq        host_sq[int][int];   //KEY is function ID and host SQ ID
-	  esp_host_cq        host_cq[int][int];   //KEY is function ID and host CQ ID
+
+	  nvme_namespace ns[U32];         //KEY is namespace ID
+	  esp_host_sq    host_sq[int][int];   //KEY is function ID and host SQ ID
+	  esp_host_cq    host_cq[int][int];   //KEY is function ID and host CQ ID
 
   
   extern function        new(string name="nvme_dut", uvm_component parent);
@@ -117,6 +117,14 @@ endfunction
 
 task nvme_dut::main_phase(uvm_phase phase);
    fork
+     begin
+       wait (hvif.pcie_enum_done == 1);
+       foreach (hvif.pcie_range_baddr[mgr_id]) begin
+         for (int dw = 0; dw < 27; dw++) begin
+             hvif.fill_dw_data_direct(hvif.pcie_range_baddr[mgr_id][0]+dw*4, $urandom());
+         end
+       end
+     end
      begin
        forever_monitor_doorbell();  //TODO controller doorbell
      end

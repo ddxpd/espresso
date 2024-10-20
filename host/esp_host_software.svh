@@ -741,6 +741,7 @@ function void esp_host::set_host_ranges(int mgr_id, bit [63:0] baddr[], bit [63:
 
   mgr.mgr_id = mgr_id;
   mgr.num_of_bar  = baddr.size();
+  mgr.bar_range = new[mgr.num_of_bar];
   for (int i = 0; i < mgr.num_of_bar; i++) begin
     mgr.bar_range[i].baddr  = baddr[i];
     mgr.bar_range[i].size   = size[i];
