@@ -1,4 +1,10 @@
 class mem_slice extends uvm_object;
+  
+
+  typedef enum U8 {
+    CMD_IDLE        = 'h0,
+    CMD_UNFINISH    = 'h2
+  } MALLOC_MODE_E;
 
   static int    slice_cnt;  //1 based
   int           slice_id;
@@ -7,6 +13,9 @@ class mem_slice extends uvm_object;
   U64           end_addr;
   U64           size;
   bit           in_use;
+  bit           exclusive;
+
+  
 
   `uvm_object_utils(mem_slice)
   
@@ -32,15 +41,24 @@ class host_memory_manager extends uvm_component;
 
   `uvm_component_utils(host_memory_manager)     
   
+
+  typedef enum U8 {
+    CMD_IDLE        = 'h0,
+    CMD_UNFINISH    = 'h2
+  } MALLOC_MODE_E;
+  
   host_memory    host_mem;
   mem_slice      slice[$];
 
   int        unit_size = 4096; //Bytes
+  MALLOC_MODE_E malloc_mode;
   
 
   extern function    new(string name, uvm_component parent);
   extern function    init();
-  extern task        malloc(int req_size, output U64 addr, output bit suc, input int timeout = 10000);   //TODO page unaligned
+  extern task        malloc(input int req_size, output U64 addr, output bit suc, input int timeout = 10000);   //TODO page unaligned
+  extern task        rand_malloc(input int req_size, output U64 addr, output bit suc, input int timeout = 10000);   //TODO page unaligned
+  extern task        seq_malloc(input int req_size, output U64 addr, output bit suc, input int timeout = 10000);   //TODO page unaligned
   extern task        free(U64 addr);  
 endclass
 
@@ -87,7 +105,13 @@ endfunction
 
 
 
-task host_memory_manager::malloc(int req_size, output U64 addr, output bit suc, input int timeout = 10000);  //TODO page unaligned
+task host_memory_manager::malloc(input int req_size, output U64 addr, output bit suc, input malloc_mode, input int timeout = 10000);
+  
+endtask
+
+
+
+task host_memory_manager::seq_malloc(input int req_size, output U64 addr, output bit suc, input int timeout = 10000);  //TODO page unaligned
   int  free_size;
   int  next_sid;
   int  last_sid = slice.size() - 1;

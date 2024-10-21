@@ -7,6 +7,7 @@ class esp_host extends uvm_component;
   nvme_cmd       cmd_waiting_q[$];
   host_vif       hvif;
   nvme_cmd       host_cmd_map[int];     //KEY is unique ID
+  nvme_cpl_entry unhandle_cqe_q[$];
 
   //For temporary
   int            msix_id_2_func[int];   
@@ -26,6 +27,7 @@ class esp_host extends uvm_component;
   extern function        fill_cmd_to_SQ(nvme_cmd cmd);
   extern task            ring_doorbell(nvme_cmd cmd, esp_func_manager mgr);
   extern task            forever_monitor_interrupt();
+  extern task            forever_process_cqe();
   extern function int    get_cq_tail(esp_host_cq cq);
   extern task            get_one_cqe(esp_host_cq cq, nvme_cpl_entry nvme_cpl);
   
@@ -41,7 +43,7 @@ class esp_host extends uvm_component;
   extern task            pbs_admin_delete_cq(nvme_cmd cmd);
   extern task            pbs_admin_create_cq(nvme_cmd cmd);
 
-  extern task            process_cmd_when_completion(int uid, bit[14:0] status);
+  extern task            process_cmd_when_completion(nvme_cpl_entry nvme_cpl);
   //Process when compeletion(pwc)
   extern task            pwc_admin_indentify(int uid);
   extern task            pwc_io_write(int uid);
@@ -498,7 +500,19 @@ task esp_host::main_phase(uvm_phase phase);
     begin
       forever_monitor_interrupt();
     end
+    begin
+      forever_process_cqe();
+    end
   join 
+endtask
+
+
+
+task esp_host::forever_process_cqe();
+  forever begin
+    wait(unhandle_cqe_q.size() > 0);
+    process_cmd_when_completion(unhandle_cqe_q.pop_front());
+  end
 endtask
 
 
@@ -535,21 +549,12 @@ task esp_host::forever_monitor_interrupt();
           nvme_cpl = nvme_cpl_entry::type_id::create("nvme_cpl");
           get_one_cqe(cq, nvme_cpl);
           //suc = do_host_cpl_compare();
-
-          suc  = 1;
+          suc  = 1;  //TODO
           if(suc)begin
-            status = nvme_cpl.get_status();
-            sqid = nvme_cpl.get_sqid();
-            cid  = nvme_cpl.get_cid();
-            uid  = find_related_cmd(fid, sqid, cid);
-            process_cmd_when_completion(uid, status);
-            host_cmd_map[uid].state = CMD_DONE;
-            `uvm_info(get_name(), "******************INIT_TEST PASS******************", UVM_NONE)
+	    unhandle_cqe_q.push_back(nvme_cpl);
           end
         end
       end
-      
-
       
         
       hvif.msix_intr_happens = 0;
@@ -623,23 +628,29 @@ endfunction
 
 
 
-task esp_host::process_cmd_when_completion(int uid, bit[14:0] status);
+task esp_host::process_cmd_when_completion(nvme_cpl_entry nvme_cpl);
   nvme_cmd    cmd;
-  
+  int         sqid, cid, uid;
+
+  status = nvme_cpl.get_status();
+  sqid   = nvme_cpl.get_sqid();
+  cid    = nvme_cpl.get_cid();
+
+  uid    = find_related_cmd(fid, sqid, cid);
   cmd = host_cmd_map[uid];
   host_cmd_map[uid].status = status;
-  if(cmd.status == 'h0)begin  //TODO
-    case(cmd.esp_opc)
-      //ADMIN CMD
-      ESP_IDENTIFY:   pwc_admin_indentify(uid);
-      ESP_DELETE_SQ:  pwc_admin_delete_sq(uid);
-      ESP_CREATE_SQ:  pwc_admin_create_sq(uid);
-      ESP_DELETE_CQ:  pwc_admin_delete_cq(uid);
-      ESP_CREATE_CQ:  pwc_admin_create_cq(uid);
-      //IO CMD
-      ESP_WRITE:      pwc_io_write(uid);
-    endcase
-  end
+  case(cmd.esp_opc)
+    //ADMIN CMD
+    ESP_IDENTIFY:   pwc_admin_indentify(uid);
+    ESP_DELETE_SQ:  pwc_admin_delete_sq(uid);
+    ESP_CREATE_SQ:  pwc_admin_create_sq(uid);
+    ESP_DELETE_CQ:  pwc_admin_delete_cq(uid);
+    ESP_CREATE_CQ:  pwc_admin_create_cq(uid);
+    //IO CMD
+    ESP_WRITE:      pwc_io_write(uid);
+  endcase
+  host_cmd_map[uid].state = CMD_DONE;
+  `uvm_info(get_name(), $sformatf("CMD #%0h is finished", uid), UVM_NONE)
 endtask
 
 
@@ -689,7 +700,15 @@ endtask
 
 
 task esp_host::pwc_admin_create_sq(int uid);
+  int fid, cqid;
   
+  fid  = host_cmd_map[uid].fid;
+  sqid = host_cmd_map[uid].sdw10_adm.create_iosq.QID;
+
+  if(mgrs[fid].CQ[sqid] != null)
+    mgrs[fid].CQ[sqid].state = QUEUE_ACTIVE;
+  else
+    `uvm_fatal(get_name(), $sformatf("Function %0h CQ %0h is not found in host side", fid, sqid))
 endtask
 
 
@@ -701,6 +720,15 @@ endtask
 
 
 task esp_host::pwc_admin_create_cq(int uid);
+  int fid, cqid;
+  
+  fid  = host_cmd_map[uid].fid;
+  cqid = host_cmd_map[uid].sdw10_adm.create_iocq.QID;
+
+  if(mgrs[fid].CQ[cqid] != null)
+    mgrs[fid].CQ[cqid].state = QUEUE_ACTIVE;
+  else
+    `uvm_fatal(get_name(), $sformatf("Function %0h CQ %0h is not found in host side", fid, cqid)) 
   
 endtask
 
