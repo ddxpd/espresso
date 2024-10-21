@@ -10,7 +10,21 @@ interface host_intf();
   U64          msix_data[U64];   //KEY is msix_addr;
   int          msix_id[U64];     //KEY is msix_addr;
   bit          intr_triggered[int]; //KEY is msix_addr;
-  
+  bit          pcie_enum_done = 0;
+  U64          pcie_range_baddr[int][int], pcie_range_size[int][int];
+ 
+
+  task send_wr_trans(U64 addr, U8 data[]);
+    foreach (data[i]) begin
+      fill_byte_data_direct(addr+i, data[i]);
+    end
+  endtask
+
+  task automatic send_rd_trans(U64 addr, ref U8 data[]);
+    foreach (data[i]) begin
+      take_byte_data_direct(addr+i, data[i]);
+    end
+  endtask
 
 
   function void clear_msix_intr();
@@ -44,6 +58,7 @@ interface host_intf();
       intr_triggered[id] = 1;
       $display("MSIX triggered");
     end
+    $display("fill_dw_data_direct addr %0x, data %0x", addr, data);
     host_mem.fill_dw_data_direct(addr, data);
   endfunction
   
@@ -84,7 +99,7 @@ interface host_intf();
 
   
   
-  function automatic void take_byte_data_direct(U64 addr, U8 data);
+  function automatic void take_byte_data_direct(U64 addr, ref U8 data);
     host_mem.take_byte_data_direct(addr, data);
   endfunction
   

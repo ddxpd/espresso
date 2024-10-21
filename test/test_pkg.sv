@@ -8,4 +8,5 @@ package test_pkg;
 
   `include "init_test.sv"
   `include "base_test.svh"
+  `include "demo_test.sv"
 endpackage

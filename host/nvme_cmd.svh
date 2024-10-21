@@ -1,8 +1,9 @@
 class nvme_cmd extends uvm_object;
   
+      
   static local int         uid_cnt;    
 
-         esp_func_manager  mgr;
+         esp_host_mgr  mgr;
 
          U32         SQE_DW[];
          CMD_STAT_E  state;
@@ -119,7 +120,7 @@ class nvme_cmd extends uvm_object;
   extern function U64         get_prp2();
   extern function int         get_fid();
 
-  extern function             assign_uid();
+  extern function void        assign_uid();
 
   extern function void        pack_dws();
   extern function void        unpack_dws();
@@ -142,7 +143,7 @@ function nvme_cmd::new(string name="nvme_cmd");
 endfunction
 
 
-function nvme_cmd::assign_uid();
+function void nvme_cmd::assign_uid();
   uid_cnt++;
   uid = uid_cnt;
 endfunction

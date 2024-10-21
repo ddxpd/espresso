@@ -1,31 +1,32 @@
 class esp_host extends uvm_component;
   `uvm_component_utils(esp_host)
 
-  host_memory    host_mem;
+  host_memory           host_mem;
   host_memory_manager   mem_mgr;
-  nvme_dut       DUT;
-  nvme_cmd       cmd_waiting_q[$];
-  host_vif       hvif;
-  nvme_cmd       host_cmd_map[int];     //KEY is unique ID
-  nvme_cpl_entry unhandle_cqe_q[$];
+  nvme_dut              DUT;
+  nvme_cmd              cmd_waiting_q[$];
+  host_vif              hvif;
+  nvme_cmd              host_cmd_map[int];     //KEY is unique ID
+  nvme_cpl_entry        unhandle_cqe_q[$];
+
+  esp_printer           printer;
 
   //For temporary
-  int            msix_id_2_func[int];   
+  int                   msix_id_2_func[int];   
 
 
-  esp_func_manager    mgrs[U32];     // KEY is function id
-
+  esp_host_mgr           mgrs[U32];     // KEY is function id
 
   extern function        new(string name="esp_host", uvm_component parent); 
   extern task            main_phase(uvm_phase phase);
 
-  extern task            post_cmd(nvme_cmd cmd, esp_func_manager mgr = null);
+  extern task            post_cmd(nvme_cmd cmd, esp_host_mgr mgr = null);
   extern function        pick_rand_mgr(nvme_cmd cmd);
  
   extern function        malloc_memory_space(nvme_cmd cmd);
   extern function        fill_data_to_host_mem(nvme_cmd cmd);
   extern function        fill_cmd_to_SQ(nvme_cmd cmd);
-  extern task            ring_doorbell(nvme_cmd cmd, esp_func_manager mgr);
+  extern task            ring_doorbell(nvme_cmd cmd, esp_host_mgr mgr);
   extern task            forever_monitor_interrupt();
   extern task            forever_process_cqe();
   extern function int    get_cq_tail(esp_host_cq cq);
@@ -54,21 +55,23 @@ class esp_host extends uvm_component;
 
   extern task            pwc_identify_cns_0(int uid);
 
-
+  extern function void   set_host_ranges(int mgr_id, bit [63:0] baddr[], bit [63:0] size[], ref esp_host_mgr mgr);
+  extern task            write_nvme_cap(int mgr_id, int start_dw, U32 data[]);
+  extern task            read_nvme_cap(int mgr_id, int start_dw, int num_dw, ref U32 data[]);
 endclass
 
 
 
 function esp_host::new(string name="esp_host", uvm_component parent);
   nvme_namespace    ns;
-  esp_func_manager  mgr;
+  esp_host_mgr  mgr;
   esp_host_sq       sq;
   esp_host_cq       cq;
   nvme_msix_vector  msix;
 
   super.new(name, parent);
 
-  mgr = esp_func_manager::type_id::create("mgr");  //TODO name should be execlsively
+  mgr = esp_host_mgr::type_id::create("mgr");  //TODO name should be execlsively
   mgr.fid = 8; //random pick
   
   ns = nvme_namespace::type_id::create("ns");
@@ -113,12 +116,12 @@ function esp_host::new(string name="esp_host", uvm_component parent);
   mgrs[mgr.fid].msix_vector[1] = msix;
   msix_id_2_func[1] = mgr.fid;
   
-
+  printer = esp_printer::type_id::create("printer", this);
 endfunction
 
 
 
-task esp_host::post_cmd(nvme_cmd cmd, esp_func_manager mgr = null);
+task esp_host::post_cmd(nvme_cmd cmd, esp_host_mgr mgr = null);
 
   `uvm_info(get_name(), $sformatf("Host is processing cmd %s", cmd.esp_opc.name()), UVM_LOW) 
   if(mgr == null)begin
@@ -157,7 +160,7 @@ endtask
 
 
 function esp_host::pick_rand_mgr(nvme_cmd cmd);
-  esp_func_manager   mgr_q[$];
+  esp_host_mgr   mgr_q[$];
   if(mgrs.size() == 0)
     `uvm_error(get_name(), $sformatf("There is no function manager could be chosen."))
  
@@ -482,7 +485,7 @@ endfunction
 
 
 
-task esp_host::ring_doorbell(nvme_cmd cmd, esp_func_manager mgr);
+task esp_host::ring_doorbell(nvme_cmd cmd, esp_host_mgr mgr);
   int fid, sqid;
   U16 sq_tail;
   
@@ -758,4 +761,94 @@ task esp_host::pbs_admin_delete_cq(nvme_cmd cmd);
 endtask
 
 
+function void esp_host::set_host_ranges(int mgr_id, bit [63:0] baddr[], bit [63:0] size[], ref esp_host_mgr mgr);
+  string s = "\n";
+  if (mgr == null) begin
+    mgr = esp_host_mgr::type_id::create("mgr");
+  end
+
+  mgr.mgr_id = mgr_id;
+  mgr.num_of_bar  = baddr.size();
+  mgr.bar_range = new[mgr.num_of_bar];
+  for (int i = 0; i < mgr.num_of_bar; i++) begin
+    mgr.bar_range[i].baddr  = baddr[i];
+    mgr.bar_range[i].size   = size[i];
+    s = {s, $sformatf("    mgr-%0d pcie range bar[%0d] {0x%16x:0x%16x}\n", mgr_id, i, baddr[i], baddr[i]+size[i]-1)};
+  end
+  `uvm_info(get_name(), s, UVM_LOW)
+  mgr.state = ST_SET_PCIE_RANGE;
+
+  if (mgrs.exists(mgr_id)) begin
+    `uvm_fatal(get_name(), $sformatf("mgr-%0d exists. Please check if it has been deleted.", mgr_id))
+  end else begin
+    mgrs[mgr_id] = mgr;
+  end
+endfunction
+
+
+task esp_host::write_nvme_cap(int mgr_id, int start_dw, U32 data[]);
+  U64 baddr, addr;
+  int num_bt;
+  U8  data_bt[];
+
+  if (!mgrs.exists(mgr_id)) begin
+    `uvm_error(get_name(), $sformatf("mgr-%0d does not exist in mgrs", mgr_id))
+  end else begin
+    baddr = mgrs[mgr_id].bar_range[0].baddr;
+    addr  = baddr + start_dw * 4;
+  end
+
+  num_bt = data.size() * 4;
+  data_bt = new[num_bt];
+
+  foreach (data[i]) begin
+    data_bt[4*i+0] = data[i][ 7: 0];
+    data_bt[4*i+1] = data[i][15: 8];
+    data_bt[4*i+2] = data[i][23:16];
+    data_bt[4*i+3] = data[i][31:24];
+  end
+
+  hvif.send_wr_trans(addr, data_bt);
+  printer.print_cap("write", mgr_id, start_dw, data);
+  mgrs[mgr_id].update_cap(start_dw, data.size(), data);
+endtask
+
+
+task esp_host::read_nvme_cap(int mgr_id, int start_dw, int num_dw, ref U32 data[]);
+  U64 baddr, addr;
+  int num_bt;
+  U8  data_bt[];
+
+  if (!mgrs.exists(mgr_id)) begin
+    `uvm_error(get_name(), $sformatf("mgr-%0d does not exist in mgrs", mgr_id))
+  end else begin
+    baddr = mgrs[mgr_id].bar_range[0].baddr;
+    addr  = baddr + start_dw * 4;
+  end
+
+  data = new[num_dw];
+  num_bt = num_dw * 4;
+  data_bt = new[num_bt];
+
+  hvif.send_rd_trans(addr, data_bt);
+
+  foreach (data_bt[i]) begin
+    case(i%4)
+      0: begin
+           data[i/4][ 7: 0] = data_bt[i];
+         end
+      1: begin
+           data[i/4][15: 8] = data_bt[i];
+         end
+      2: begin
+           data[i/4][23:16] = data_bt[i];
+         end
+      3: begin
+           data[i/4][31:24] = data_bt[i];
+         end
+    endcase
+  end
+  printer.print_cap("read", mgr_id, start_dw, data);
+  mgrs[mgr_id].update_cap(start_dw, data.size(), data);
+endtask
 
