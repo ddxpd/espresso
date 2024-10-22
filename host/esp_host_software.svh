@@ -20,11 +20,11 @@ class esp_host extends uvm_component;
   extern task            main_phase(uvm_phase phase);
 
   extern task            post_cmd(nvme_cmd cmd, esp_host_mgr mgr = null);
-  extern function        pick_rand_mgr(nvme_cmd cmd);
+  extern function void   pick_rand_mgr(nvme_cmd cmd);
  
-  extern function        malloc_memory_space(nvme_cmd cmd);
-  extern function        fill_data_to_host_mem(nvme_cmd cmd);
-  extern function        fill_cmd_to_SQ(nvme_cmd cmd);
+  extern function void   malloc_memory_space(nvme_cmd cmd);
+  extern function void   fill_data_to_host_mem(nvme_cmd cmd);
+  extern function void   fill_cmd_to_SQ(nvme_cmd cmd);
   extern task            ring_doorbell(nvme_cmd cmd, esp_host_mgr mgr);
   extern task            forever_monitor_interrupt();
   extern function int    get_cq_tail(esp_host_cq cq);
@@ -157,7 +157,7 @@ endtask
 
 
 
-function esp_host::pick_rand_mgr(nvme_cmd cmd);
+function void esp_host::pick_rand_mgr(nvme_cmd cmd);
   esp_host_mgr   mgr_q[$];
   if(mgrs.size() == 0)
     `uvm_error(get_name(), $sformatf("There is no function manager could be chosen."))
@@ -428,7 +428,7 @@ endtask
 
 
 
-function esp_host::malloc_memory_space(nvme_cmd cmd);
+function void esp_host::malloc_memory_space(nvme_cmd cmd);
   bit[HOST_AXI_WIDTH-1:0] addr;
   //malloc_space(cmd.data_size, addr);
   //temp assign
@@ -449,7 +449,7 @@ function esp_host::malloc_memory_space(nvme_cmd cmd);
 endfunction
 
 
-function esp_host::fill_data_to_host_mem(nvme_cmd cmd);
+function void esp_host::fill_data_to_host_mem(nvme_cmd cmd);
   bit[HOST_AXI_WIDTH-1:0] addr;
   int       size;
 
@@ -464,7 +464,7 @@ endfunction
 
 
 
-function esp_host::fill_cmd_to_SQ(nvme_cmd cmd);
+function void esp_host::fill_cmd_to_SQ(nvme_cmd cmd);
   bit[HOST_AXI_WIDTH-1:0] addr;
   int  fid = cmd.mgr.fid;
   int  sqid = cmd.sqid;

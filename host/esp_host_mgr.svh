@@ -45,10 +45,10 @@ class esp_host_mgr extends uvm_object;
   S_PMRMSCL         pmrmscl;
   S_PMRMSCU         pmrmscu;
 
-  extern function new(string name="esp_host_mgr");
-  extern function register_cq(esp_host_cq cq);
-  extern function register_sq(esp_host_sq sq);
-  extern function update_cap(int start_dw, int num_dw, ref U32 data[]);
+  extern function      new(string name="esp_host_mgr");
+  extern function void register_cq(esp_host_cq cq);
+  extern function void register_sq(esp_host_sq sq);
+  extern function void update_cap(int start_dw, int num_dw, ref U32 data[]);
 
 endclass
 
@@ -60,7 +60,7 @@ endfunction
 
 
 
-function esp_host_mgr::register_cq(esp_host_cq cq);
+function void esp_host_mgr::register_cq(esp_host_cq cq);
   if(this.CQ[cq.qid] == null)
     this.CQ[cq.qid] = cq;
   else
@@ -69,7 +69,7 @@ endfunction
 
 
 
-function esp_host_mgr::register_sq(esp_host_sq sq);
+function void esp_host_mgr::register_sq(esp_host_sq sq);
   if(this.SQ[sq.qid] == null)
     this.SQ[sq.qid] = sq;
   else
@@ -77,7 +77,7 @@ function esp_host_mgr::register_sq(esp_host_sq sq);
 endfunction
 
 
-function esp_host_mgr::update_cap(int start_dw, int num_dw, ref U32 data[]);
+function void esp_host_mgr::update_cap(int start_dw, int num_dw, ref U32 data[]);
   num_dw = data.size();
 
   for (int i = 0; i < num_dw; i++) begin

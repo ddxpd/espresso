@@ -26,11 +26,11 @@ class nvme_dut extends uvm_component;
   extern task            forever_handle_cmd();
   extern task            forever_send_MSIX_intr();
 
-  extern function        set_sq_tail(int fid, int sqid, int tail);
+  extern function void   set_sq_tail(int fid, int sqid, int tail);
   extern task            read_sqe(esp_host_sq sq, ref U32 DW[]);
   extern task            cmd_handle(nvme_cmd cmd);
   extern task            read_data(XFR_INFO  xfr_q[$], ref U8 data[$]);
-  extern function        print_data(ref U8 data[$]);
+  extern function void   print_data(ref U8 data[$]);
   extern task            send_cqe(nvme_cmd cmd);
   
 
@@ -44,7 +44,7 @@ class nvme_dut extends uvm_component;
   extern task            admin_identify_handling(nvme_cmd cmd);
 
 
-  extern function        get_prp(nvme_cmd cmd, XFR_INFO xfr_q[$]);
+  extern function void   get_prp(nvme_cmd cmd, XFR_INFO xfr_q[$]);
 endclass
 
 
@@ -67,12 +67,12 @@ function void nvme_dut::build_phase(uvm_phase phase);
     nvme_namespace     ns_temp;
     ns_temp = nvme_namespace::type_id::create($sformatf("ns_%0d", i));
     ns[i] = ns_temp;
-    std::randomize(lba_data_size) with {
+    if (!std::randomize(lba_data_size) with {
       lba_data_size inside {9, 12};
-    };
-    std::randomize(meta_data_size) with {
+    }) `uvm_error(get_name(), "lba_data_size randomization failed")
+    if (!std::randomize(meta_data_size) with {
       meta_data_size inside {0, 8, 16};
-    };
+    }) `uvm_error(get_name(), "meta_data_size randomization failed")
     $display("lba_data_size = %0d, meta_data_size = %0d", lba_data_size, meta_data_size);
     ns[i].lba_ds = lba_data_size;
     ns[i].meta_ds = meta_data_size;
@@ -197,7 +197,7 @@ endtask
 
 
 
-function nvme_dut::set_sq_tail(int fid, int sqid, int tail);
+function void nvme_dut::set_sq_tail(int fid, int sqid, int tail);
   host_sq[fid][sqid].set_tail(tail);
 endfunction
 
@@ -248,7 +248,7 @@ endtask
 
 
 
-function nvme_dut::print_data(ref U8 data[$]);
+function void nvme_dut::print_data(ref U8 data[$]);
   int size = data.size();
   foreach(data[i])
     `uvm_info(get_name(), $sformatf("DUT got data[%0d] = %0h", i, data[i]), UVM_NONE)
@@ -381,7 +381,7 @@ endtask
 
 
 
-function nvme_dut::get_prp(nvme_cmd cmd, XFR_INFO xfr_q[$]);
+function void nvme_dut::get_prp(nvme_cmd cmd, XFR_INFO xfr_q[$]);
   int    mps     = 12; //TODO
   int    page_sz = 2**(mps);
   int    nsid    = cmd.nsid;

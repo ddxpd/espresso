@@ -391,13 +391,13 @@ endfunction
 
 function void nvme_cmd::parse_opc();
   case({is_admin, SQE_DW[0][7:0]})
-    {0, 8'h01}:  esp_opc = ESP_WRITE;
-    {0, 8'h02}:  esp_opc = ESP_READ;
-    {1, 8'h00}:  esp_opc = ESP_DELETE_SQ;
-    {1, 8'h01}:  esp_opc = ESP_CREATE_SQ;
-    {1, 8'h04}:  esp_opc = ESP_DELETE_CQ;
-    {1, 8'h05}:  esp_opc = ESP_CREATE_CQ;
-    {1, 8'h06}:  esp_opc = ESP_IDENTIFY;
+    {1'b0, 8'h01}:  esp_opc = ESP_WRITE;
+    {1'b0, 8'h02}:  esp_opc = ESP_READ;
+    {1'b1, 8'h00}:  esp_opc = ESP_DELETE_SQ;
+    {1'b1, 8'h01}:  esp_opc = ESP_CREATE_SQ;
+    {1'b1, 8'h04}:  esp_opc = ESP_DELETE_CQ;
+    {1'b1, 8'h05}:  esp_opc = ESP_CREATE_CQ;
+    {1'b1, 8'h06}:  esp_opc = ESP_IDENTIFY;
   endcase
 endfunction
 
