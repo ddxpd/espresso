@@ -305,3 +305,34 @@ typedef enum {
 } E_COMMAND_SPECIFIC_STATUS_CODE;
 
 
+typedef enum {
+  CAP_CAP       = 0,
+  CAP_VERSION   = 2,
+  CAP_INTMS     = 3,
+  CAP_INTMC     = 4,
+  CAP_CC        = 5,
+  CAP_CSTS      = 7,
+  CAP_NSSR      = 8,
+  CAP_AQA       = 9,
+  CAP_ASQ       = 10,
+  CAP_ACQ       = 12,
+  CAP_CMBLOC    = 14,
+  CAP_CMBSZ     = 15,
+  CAP_BPINFO    = 16,
+  CAP_BPRSEL    = 17,
+  CAP_BPMBL     = 18,
+  CAP_CMBMSC    = 20,
+  CAP_CMBSTS    = 22,
+  CAP_CMBEBS    = 23,
+  CAP_CMBSWTP   = 24,
+  CAP_NSSD      = 25,
+  CAP_CRTO      = 26,
+  CAP_PMRCAP    = 896,
+  CAP_PMRCTL    = 897,
+  CAP_PMRSTS    = 898,
+  CAP_PMREBS    = 899,
+  CAP_PMRSWTP   = 900,
+  CAP_PMRMSCL   = 901,
+  CAP_PMRMSCU   = 902
+} E_CAP_POS;
+

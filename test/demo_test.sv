@@ -75,9 +75,30 @@ task demo_test::main_phase(uvm_phase phase);
   #10ns;
 
   foreach (mgrs[i]) begin
-    U32 rdata[];
-    host.read_nvme_cap(i, 0, 2, rdata);
-    host.read_nvme_cap(i, 2, 1, rdata);
+    U32 rdata[], wdata[];
+    S_CSTS csts;
+    S_CC   cc;
+    host.read_nvme_cap(i, CAP_CAP, 2, rdata);
+    host.read_nvme_cap(i, CAP_VERSION, 1, rdata);
+
+    do begin
+      host.read_nvme_cap(i, CAP_CSTS, 1, rdata);
+      csts = rdata[0];
+      #1ns;
+    end while (csts.RDY != 0);
+
+    cc.EN = 1;
+    wdata = new[1];
+    wdata[0] = cc;
+    host.write_nvme_cap(i, CAP_CC, wdata);
+    `uvm_info(get_name(), $sformatf("mgr %0d Host writes CC.EN=1", i), UVM_NONE)
+
+    do begin
+      host.read_nvme_cap(i, CAP_CSTS, 1, rdata);
+      csts = rdata[0];
+      #1ns;
+    end while (csts.RDY == 0);
+    `uvm_info(get_name(), $sformatf("mgr %0d Controller writes CSTS.RDY=1", i), UVM_NONE)
   end
 
 

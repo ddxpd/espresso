@@ -4,6 +4,7 @@ class host_memory;
       U64      start_addr = 'h0;
       U64      end_addr   = 'h4000_0000 - 1;
 
+      U8       dft_val    = 'hff;
 
   extern function             new(string name="host_memory");
   extern function void        init();
@@ -16,7 +17,7 @@ class host_memory;
   extern function void        fill_byte_data_queue_direct(U64 addr, int byte_size, ref U8 data[$]);
 
   extern function void        take_byte_data_direct(U64 addr, ref U8 data);
-  extern function void        take_dw_data_direct(U64 addr, U32 data);
+  extern function void        take_dw_data_direct(U64 addr, ref U32 data);
   extern function void        take_byte_data_array_direct(U64 addr, ref U8 data[]);
   extern function void        take_dw_data_array_direct(U64 addr, ref U32 data[]);
   extern function void        take_byte_data_queue_direct(U64 addr, int byte_size, ref U8 data[$]);
@@ -125,16 +126,12 @@ endfunction
 
 
 
-function void host_memory::take_dw_data_direct(U64 addr, U32 data);
-   data[ 7: 0] = mem[addr  ];
-   data[15: 8] = mem[addr+1];
-   data[23:16] = mem[addr+2];
-   data[31:24] = mem[addr+3];
-   $display("take_dw_data_direct, got U32 data = %0h", data);
-   $display("take_dw_data_direct, mem[%0h] = %0h", addr,   mem[addr  ]);
-   $display("take_dw_data_direct, mem[%0h] = %0h", addr+1, mem[addr+1]);
-   $display("take_dw_data_direct, mem[%0h] = %0h", addr+2, mem[addr+2]);
-   $display("take_dw_data_direct, mem[%0h] = %0h", addr+3, mem[addr+3]);
+function void host_memory::take_dw_data_direct(U64 addr, ref U32 data);
+   data[ 7: 0] = mem.exists(addr)   ? mem[addr  ] : dft_val;
+   data[15: 8] = mem.exists(addr+1) ? mem[addr+1] : dft_val;
+   data[23:16] = mem.exists(addr+2) ? mem[addr+2] : dft_val;
+   data[31:24] = mem.exists(addr+3) ? mem[addr+3] : dft_val;
+   $display("take_dw_data_direct, addr %0h got U32 data = %0h", addr, data);
 endfunction
 
 
@@ -143,7 +140,7 @@ function void host_memory::take_byte_data_array_direct(U64 addr,  ref U8 data[])
   int size = data.size();
   $display("take_byte_data_array_direct, U8 data size = %0d", size);
   for(int i = 0; i < size; i++)begin
-   data[i] =  mem[addr];
+   data[i] = mem.exists(addr) ? mem[addr] : dft_val;
    $display("take_byte_data_array_direct, mem[%0h] = %0h, got U8 data = %0h", addr, mem[addr], data[i]);
    addr++;
   end
@@ -155,15 +152,11 @@ function void host_memory::take_dw_data_array_direct(U64 addr,  ref U32 data[]);
   int size = data.size();
   $display("take_dw_data_array_direct, U32 data size = %0d", size);
   for(int i = 0; i < size; i++)begin
-    data[i][ 7: 0] = mem[addr  ];
-    data[i][15: 8] = mem[addr+1];
-    data[i][23:16] = mem[addr+2];
-    data[i][31:24] = mem[addr+3];
-    $display("take_dw_data_array_direct, got U32 data = %0h", data[i]);
-    $display("take_dw_data_array_direct, mem[%0h] = %0h", addr,   mem[addr],  );
-    $display("take_dw_data_array_direct, mem[%0h] = %0h", addr+1, mem[addr+1],);
-    $display("take_dw_data_array_direct, mem[%0h] = %0h", addr+2, mem[addr+2],);
-    $display("take_dw_data_array_direct, mem[%0h] = %0h", addr+3, mem[addr+3],);
+    data[i][ 7: 0] = mem.exists(addr)   ? mem[addr  ] : dft_val;
+    data[i][15: 8] = mem.exists(addr+1) ? mem[addr+1] : dft_val;
+    data[i][23:16] = mem.exists(addr+2) ? mem[addr+2] : dft_val;
+    data[i][31:24] = mem.exists(addr+3) ? mem[addr+3] : dft_val;
+    $display("take_dw_data_array_direct, addr %0h got U32 data = %0h", addr, data[i]);
     addr += 4;
   end
 endfunction
@@ -174,7 +167,7 @@ endfunction
 function void host_memory::take_byte_data_queue_direct(U64 addr, int byte_size, ref U8 data[$]);
   $display("take_byte_data_array_direct, U8 data size = %0d", byte_size);
   for(int i = 0; i < byte_size; i++)begin
-   data[i] =  mem[addr];
+   data[i] =  mem.exists(addr) ? mem[addr] : dft_val;
    $display("take_byte_data_array_direct, mem[%0h] = %0h, got U8 data = %0h", addr, mem[addr], data[i]);
    addr++;
   end
@@ -186,15 +179,11 @@ endfunction
 function void host_memory::take_dw_data_queue_direct(U64 addr, int byte_size, ref U32 data[$]);
   $display("take_dw_data_array_direct, U32 data size = %0d", byte_size);
   for(int i = 0; i < byte_size/4; i++)begin
-    data[i][ 7: 0] = mem[addr  ];
-    data[i][15: 8] = mem[addr+1];
-    data[i][23:16] = mem[addr+2];
-    data[i][31:24] = mem[addr+3];
-    $display("take_dw_data_array_direct, got U32 data = %0h", data[i]);
-    $display("take_dw_data_array_direct, mem[%0h] = %0h", addr,   mem[addr],  );
-    $display("take_dw_data_array_direct, mem[%0h] = %0h", addr+1, mem[addr+1],);
-    $display("take_dw_data_array_direct, mem[%0h] = %0h", addr+2, mem[addr+2],);
-    $display("take_dw_data_array_direct, mem[%0h] = %0h", addr+3, mem[addr+3],);
+    data[i][ 7: 0] = mem.exists(addr)   ? mem[addr  ] : dft_val;
+    data[i][15: 8] = mem.exists(addr+1) ? mem[addr+1] : dft_val;
+    data[i][23:16] = mem.exists(addr+2) ? mem[addr+2] : dft_val;
+    data[i][31:24] = mem.exists(addr+3) ? mem[addr+3] : dft_val;
+    $display("take_dw_data_array_direct, addr %0h got U32 data = %0h", addr, data[i]);
     addr += 4;
   end
 endfunction
