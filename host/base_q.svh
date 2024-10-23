@@ -318,7 +318,7 @@ endfunction
 function void esp_host_cq::add_sq(esp_host_sq sq);
   int  qid = sq.qid;
   `uvm_info(get_name(), $sformatf("qid = %0d", qid), UVM_LOW) 
-  if(SQ[qid] == null)
+  if(!SQ.exists(qid))
     SQ[qid] = sq;
   else
     `uvm_error(get_name(), $sformatf("SQ is already set for SQ %0h.", sq.qid)) 

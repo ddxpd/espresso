@@ -2,12 +2,11 @@ class esp_host_mgr extends uvm_object;
 
   `uvm_object_utils(esp_host_mgr)
 
-  int               mgr_id;
+  int               fid;
   int               num_of_bar; 
   S_BAR_RANGE       bar_range[];
   E_CTRLER_STATE    state = ST_RESET;
 
-  int               fid;
   int               num_sq_support;
   int               num_cq_support; 
   nvme_namespace    active_ns[U32];    // KEY is namespace id
@@ -61,7 +60,7 @@ endfunction
 
 
 function void esp_host_mgr::register_cq(esp_host_cq cq);
-  if(this.CQ[cq.qid] == null)
+  if(!this.CQ.exists(cq.qid))
     this.CQ[cq.qid] = cq;
   else
     `uvm_fatal(get_name(), $sformatf("CQ %0h for Function %0h already existed.", cq.qid, fid)) 
@@ -70,7 +69,7 @@ endfunction
 
 
 function void esp_host_mgr::register_sq(esp_host_sq sq);
-  if(this.SQ[sq.qid] == null)
+  if(!this.SQ.exists(sq.qid))
     this.SQ[sq.qid] = sq;
   else
     `uvm_fatal(get_name(), $sformatf("SQ %0h for Function %0h already existed.", sq.qid, fid))
