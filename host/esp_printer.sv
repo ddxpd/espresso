@@ -2,7 +2,7 @@ class esp_printer extends uvm_object;
   `uvm_object_utils(esp_printer)
 
   extern function      new(string name="esp_printer");
-  extern function void print_cap(string prefix="cap info", int mgr_id, int start_dw, U32 data[]);
+  extern function void print_cap(string prefix="cap info", int fid, int start_dw, U32 data[]);
 endclass
 
 
@@ -11,10 +11,10 @@ function esp_printer::new(string name="esp_printer");
 endfunction
 
 
-function void esp_printer::print_cap(string prefix="cap info", int mgr_id, int start_dw, U32 data[]);
+function void esp_printer::print_cap(string prefix="cap info", int fid, int start_dw, U32 data[]);
   int num_dw;
 
-  $display("********%s********mgr %0d", prefix, mgr_id);
+  $display("********%s********mgr %0d", prefix, fid);
   num_dw = data.size();
 
   for (int i = 0; i < num_dw; i++) begin
@@ -134,6 +134,6 @@ function void esp_printer::print_cap(string prefix="cap info", int mgr_id, int s
     endcase
   end
 
-  $display("********%s********mgr %0d", prefix, mgr_id);
+  $display("********%s********mgr %0d", prefix, fid);
 endfunction
 

@@ -26,7 +26,7 @@ class nvme_dut extends uvm_component;
   extern task            forever_handle_cmd();
   extern task            forever_send_MSIX_intr();
 
-  extern task            cap_init(int mgr_id);
+  extern task            cap_init(int fid);
   extern function void   set_sq_tail(int fid, int sqid, int tail);
   extern task            read_sqe(esp_host_sq sq, ref U32 DW[]);
   extern task            cmd_handle(nvme_cmd cmd);
@@ -114,8 +114,8 @@ function void nvme_dut::connect_phase(uvm_phase phase);
   super.connect_phase(phase);
 endfunction
 
-task nvme_dut::cap_init(int mgr_id);
-  U64        cap_addr = hvif.pcie_range_baddr[mgr_id][0];
+task nvme_dut::cap_init(int fid);
+  U64        cap_addr = hvif.pcie_range_baddr[fid][0];
   S_CAP      cap      = 0;
   S_VERSION  vs       = 0;
   S_CSTS     csts     = 0;
@@ -140,11 +140,11 @@ task nvme_dut::cap_init(int mgr_id);
     hvif.take_dw_data_direct(cap_addr+CAP_CC*4, cc);
     #1ns;
   end while (cc.EN == 0);
-  `uvm_info(get_name(), $sformatf("mgr %0d DUT gets CC.EN=1", mgr_id), UVM_NONE)
+  `uvm_info(get_name(), $sformatf("mgr %0d DUT gets CC.EN=1", fid), UVM_NONE)
 
   csts.RDY = 1;
   hvif.fill_dw_data_direct(cap_addr+CAP_CSTS*4, csts);
-  `uvm_info(get_name(), $sformatf("mgr %0d DUT writes csts.RDY=1", mgr_id), UVM_NONE)
+  `uvm_info(get_name(), $sformatf("mgr %0d DUT writes csts.RDY=1", fid), UVM_NONE)
 
 endtask
 
@@ -153,8 +153,8 @@ task nvme_dut::main_phase(uvm_phase phase);
    fork
      begin
        wait (hvif.pcie_enum_done == 1);
-       foreach (hvif.pcie_range_baddr[mgr_id]) begin
-         cap_init(mgr_id);
+       foreach (hvif.pcie_range_baddr[fid]) begin
+         cap_init(fid);
        end
      end
      begin

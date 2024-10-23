@@ -55,9 +55,9 @@ class esp_host extends uvm_component;
 
   extern task            pwc_identify_cns_0(int uid);
 
-  extern function void   set_host_ranges(int mgr_id, bit [63:0] baddr[], bit [63:0] size[], ref esp_host_mgr mgr);
-  extern task            write_nvme_cap(int mgr_id, int start_dw, U32 data[]);
-  extern task            read_nvme_cap(int mgr_id, int start_dw, int num_dw, ref U32 data[]);
+  extern function void   set_host_ranges(int fid, bit [63:0] baddr[], bit [63:0] size[], ref esp_host_mgr mgr);
+  extern task            write_nvme_cap(int fid, int start_dw, U32 data[]);
+  extern task            read_nvme_cap(int fid, int start_dw, int num_dw, ref U32 data[]);
 endclass
 
 
@@ -761,40 +761,40 @@ task esp_host::pbs_admin_delete_cq(nvme_cmd cmd);
 endtask
 
 
-function void esp_host::set_host_ranges(int mgr_id, bit [63:0] baddr[], bit [63:0] size[], ref esp_host_mgr mgr);
+function void esp_host::set_host_ranges(int fid, bit [63:0] baddr[], bit [63:0] size[], ref esp_host_mgr mgr);
   string s = "\n";
   if (mgr == null) begin
     mgr = esp_host_mgr::type_id::create("mgr");
   end
 
-  mgr.mgr_id = mgr_id;
+  mgr.fid = fid;
   mgr.num_of_bar  = baddr.size();
   mgr.bar_range = new[mgr.num_of_bar];
   for (int i = 0; i < mgr.num_of_bar; i++) begin
     mgr.bar_range[i].baddr  = baddr[i];
     mgr.bar_range[i].size   = size[i];
-    s = {s, $sformatf("    mgr-%0d pcie range bar[%0d] {0x%16x:0x%16x}\n", mgr_id, i, baddr[i], baddr[i]+size[i]-1)};
+    s = {s, $sformatf("    mgr-%0d pcie range bar[%0d] {0x%16x:0x%16x}\n", fid, i, baddr[i], baddr[i]+size[i]-1)};
   end
   `uvm_info(get_name(), s, UVM_LOW)
   mgr.state = ST_SET_PCIE_RANGE;
 
-  if (mgrs.exists(mgr_id)) begin
-    `uvm_fatal(get_name(), $sformatf("mgr-%0d exists. Please check if it has been deleted.", mgr_id))
+  if (mgrs.exists(fid)) begin
+    `uvm_fatal(get_name(), $sformatf("mgr-%0d exists. Please check if it has been deleted.", fid))
   end else begin
-    mgrs[mgr_id] = mgr;
+    mgrs[fid] = mgr;
   end
 endfunction
 
 
-task esp_host::write_nvme_cap(int mgr_id, int start_dw, U32 data[]);
+task esp_host::write_nvme_cap(int fid, int start_dw, U32 data[]);
   U64 baddr, addr;
   int num_bt;
   U8  data_bt[];
 
-  if (!mgrs.exists(mgr_id)) begin
-    `uvm_error(get_name(), $sformatf("mgr-%0d does not exist in mgrs", mgr_id))
+  if (!mgrs.exists(fid)) begin
+    `uvm_error(get_name(), $sformatf("mgr-%0d does not exist in mgrs", fid))
   end else begin
-    baddr = mgrs[mgr_id].bar_range[0].baddr;
+    baddr = mgrs[fid].bar_range[0].baddr;
     addr  = baddr + start_dw * 4;
   end
 
@@ -809,20 +809,20 @@ task esp_host::write_nvme_cap(int mgr_id, int start_dw, U32 data[]);
   end
 
   hvif.send_wr_trans(addr, data_bt);
-  printer.print_cap("write", mgr_id, start_dw, data);
-  mgrs[mgr_id].update_cap(start_dw, data.size(), data);
+  printer.print_cap("write", fid, start_dw, data);
+  mgrs[fid].update_cap(start_dw, data.size(), data);
 endtask
 
 
-task esp_host::read_nvme_cap(int mgr_id, int start_dw, int num_dw, ref U32 data[]);
+task esp_host::read_nvme_cap(int fid, int start_dw, int num_dw, ref U32 data[]);
   U64 baddr, addr;
   int num_bt;
   U8  data_bt[];
 
-  if (!mgrs.exists(mgr_id)) begin
-    `uvm_error(get_name(), $sformatf("mgr-%0d does not exist in mgrs", mgr_id))
+  if (!mgrs.exists(fid)) begin
+    `uvm_error(get_name(), $sformatf("mgr-%0d does not exist in mgrs", fid))
   end else begin
-    baddr = mgrs[mgr_id].bar_range[0].baddr;
+    baddr = mgrs[fid].bar_range[0].baddr;
     addr  = baddr + start_dw * 4;
   end
 
@@ -848,7 +848,7 @@ task esp_host::read_nvme_cap(int mgr_id, int start_dw, int num_dw, ref U32 data[
          end
     endcase
   end
-  printer.print_cap("read", mgr_id, start_dw, data);
-  mgrs[mgr_id].update_cap(start_dw, data.size(), data);
+  printer.print_cap("read", fid, start_dw, data);
+  mgrs[fid].update_cap(start_dw, data.size(), data);
 endtask
 
