@@ -5,6 +5,7 @@ package test_pkg;
   import bfm_pkg::*;
   import host_pkg::*;
   import host_mem_pkg::*;
+  import nvme_trans_lib_pkg::*;
 
   `include "init_test.sv"
   `include "base_test.svh"

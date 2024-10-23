@@ -105,7 +105,7 @@ interface host_intf();
   
   
   
-  function automatic void take_dw_data_direct(U64 addr, U32 data);
+  function automatic void take_dw_data_direct(U64 addr, ref U32 data);
     host_mem.take_dw_data_direct(addr, data);
   endfunction
   
