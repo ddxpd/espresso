@@ -58,6 +58,7 @@ class esp_host extends uvm_component;
   extern function void   set_host_ranges(int fid, bit [63:0] baddr[], bit [63:0] size[], ref esp_host_mgr mgr);
   extern task            write_nvme_cap(int fid, int start_dw, U32 data[]);
   extern task            read_nvme_cap(int fid, int start_dw, int num_dw, ref U32 data[]);
+  extern task            create_admin_sq_cq(int fid, int asq_size, int acq_size);
 endclass
 
 
@@ -81,25 +82,6 @@ function esp_host::new(string name="esp_host", uvm_component parent);
   ns.nsid = 1;
   mgr.active_ns[ns.nsid] = ns;
   mgrs[mgr.fid] = mgr;
-
-  //Temporary Admin CQ creating
-  cq = esp_host_cq::type_id::create("cq");
-  cq.set_qid(0);  
-  cq.set_continuous(1);  
-  cq.set_base_addr('h1000);
-  cq.set_num_entry(5);
-  cq.reset_ptr();
-  mgrs[mgr.fid].register_cq(cq);
-
-  //Temporary Admin SQ creating
-  sq = esp_host_sq::type_id::create("sq");
-  sq.set_qid(0);
-  sq.set_continuous(1);
-  sq.set_base_addr('h2000);
-  sq.set_num_entry(5);
-  sq.reset_ptr();
-  sq.add_cq(cq);
-  mgrs[mgr.fid].register_sq(sq);
 
   //Temporary MSIX Vector
   msix = nvme_msix_vector::type_id::create("msix");
@@ -861,3 +843,49 @@ task esp_host::read_nvme_cap(int fid, int start_dw, int num_dw, ref U32 data[]);
   mgrs[fid].update_cap(start_dw, data.size(), data);
 endtask
 
+
+task esp_host::create_admin_sq_cq(int fid, int asq_size, int acq_size);
+  S_AQA        aqa;
+  S_ASQ        asq;
+  S_ACQ        acq;
+  U64          asq_addr, acq_addr;
+  esp_host_cq  cq;
+  esp_host_sq  sq;
+  U32          wdata[];
+  bit          suc;
+
+  aqa.ASQS = asq_size;
+  aqa.ACQS = acq_size;
+  wdata = new[1];
+  wdata[0] = aqa;
+  mem_mgr.malloc((aqa.ASQS + 1) * 16 * 4, asq_addr, suc);
+  mem_mgr.malloc((aqa.ACQS + 1) * 16 * 4, acq_addr, suc);
+  write_nvme_cap(fid, CAP_AQA, wdata);
+
+  wdata = new[2];
+  {wdata[1], wdata[0]} = asq_addr;
+  write_nvme_cap(fid, CAP_ASQ, wdata);
+  {wdata[1], wdata[0]} = acq_addr;
+  write_nvme_cap(fid, CAP_ACQ, wdata);
+
+  cq = esp_host_cq::type_id::create("cq", this);
+  sq = esp_host_sq::type_id::create("sq", this);
+
+  cq = esp_host_cq::type_id::create("cq");
+  cq.set_qid(0);  
+  cq.set_continuous(1);  
+  cq.set_base_addr(acq_addr);
+  cq.set_num_entry(aqa.ACQS+1);
+  cq.reset_ptr();
+  mgrs[fid].register_cq(cq);
+
+  sq = esp_host_sq::type_id::create("sq");
+  sq.set_qid(0);
+  sq.set_continuous(1);
+  sq.set_base_addr(asq_addr);
+  sq.set_num_entry(aqa.ASQS+1);
+  sq.reset_ptr();
+  sq.add_cq(cq);
+  mgrs[fid].register_sq(sq);
+
+endtask

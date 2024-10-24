@@ -70,6 +70,8 @@ task base_test::main_phase(uvm_phase phase);
       size[bar]  = 64'h1_0000;
     end
     host.set_host_ranges(i, baddr, size, mgrs[i]);
+    host.create_admin_sq_cq(i, 'h100, 'h100);
+
   end
  
   foreach(host.mgrs[i])
