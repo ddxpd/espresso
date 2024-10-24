@@ -71,6 +71,9 @@ task base_test::main_phase(uvm_phase phase);
     end
     host.set_host_ranges(i, baddr, size, mgrs[i]);
   end
+ 
+  foreach(host.mgrs[i])
+    `uvm_info(get_name(), $sformatf("create mgr[%0h] fid = %0h", i, host.mgrs[i].fid), UVM_LOW) 
 
   cmd = nvme_cmd::type_id::create("cmd", this);
   if(!cmd.randomize with {
@@ -81,7 +84,7 @@ task base_test::main_phase(uvm_phase phase);
     cmd.sdw11_adm.create_iocq.IV    == 1;
     cmd.sqid == 0;
   }) `uvm_error(get_name(), $sformatf("cmd randomize failed!")) 
-  host.post_cmd(cmd); 
+  host.post_cmd(cmd, host.mgrs[8]); 
   cmd.wait_done();
 
   cmd = nvme_cmd::type_id::create("cmd", this);
@@ -93,7 +96,7 @@ task base_test::main_phase(uvm_phase phase);
     cmd.sdw11_adm.create_iosq.CQID  == 1;
     cmd.sqid == 0;
   }) `uvm_error(get_name(), $sformatf("cmd randomize failed!")) 
-  host.post_cmd(cmd); 
+  host.post_cmd(cmd, host.mgrs[8]); 
   cmd.wait_done();
 
   fork
@@ -105,7 +108,7 @@ task base_test::main_phase(uvm_phase phase);
         cmd.sdw1.NSID == 1;
 	cmd.sdw12_io.write.NLB == 1;
       }) `uvm_error(get_name(), $sformatf("cmd randomize failed!")) 
-      host.post_cmd(cmd); 
+      host.post_cmd(cmd, host.mgrs[8]); 
 
       num_cmd_send++;
       cmd_q.push_back(cmd);

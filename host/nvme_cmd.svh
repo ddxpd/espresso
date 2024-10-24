@@ -96,7 +96,7 @@ class nvme_cmd extends uvm_object;
   }
   
   constraint c_nlb {
-    soft nlb dist {0:=40,[1:3]:=60};   
+    soft nlb dist {0:=40, [1:3]:=60};   
   }
 
 
@@ -190,7 +190,7 @@ endfunction
 
 function void nvme_cmd::post_randomize();
   int    ri;       //Random Index
-  U32    fq[$];    //Found Queue
+  int    fq[$];    //Found Queue
   //assign NSID SQID CQID and CID
   
   if(nsid == -1)begin
@@ -199,9 +199,25 @@ function void nvme_cmd::post_randomize();
     nsid  = fq[ri];
   end
 
-  if(sqid == -1)begin
-
+  //Admin cmd must be assigned to Admin sq/cq
+  if(esp_opc & 'h100 != 0)begin
+    sqid = 0;
+    cqid = 0;
   end
+  //IO cmd must be assigned to IO sq/cq
+  else begin
+    fq    = mgr.SQ.find_index(x) with (x.state == QUEUE_ACTIVE && x.qid != 0);
+    if(fq.size() == 0)begin
+      `uvm_fatal(get_name(), $sformatf("There is no ready IO SQ for function 'h%0h", fid))
+    end
+    else begin
+      ri = $urandom_range(0, fq.size()-1);
+      sqid = fq[ri];
+      cqid = mgr.SQ[sqid].cqid;
+    end 
+  end
+
+
 
   if(cqid == -1)begin
 
@@ -226,6 +242,9 @@ endfunction
 
 
 function void nvme_cmd::stage_1_basic_process();
+  
+  fid = mgr.fid;
+
   if(esp_opc & 'h100 != 0)begin
     is_admin = 1;
     
@@ -240,6 +259,8 @@ function void nvme_cmd::stage_1_basic_process();
     if(sqid == 0)
       `uvm_error(get_name(), $sformatf("IO cmd should not be post to Admin SQ")) 
   end
+  
+  cid = sdw0.CID;
 
 endfunction
 
@@ -417,6 +438,6 @@ task nvme_cmd::wait_done(int timeout = 100000);
     end
   end while(tick < timeout && !suc);
 
-  if(suc)
+  if(!suc)
     `uvm_fatal(get_name(), $sformatf("Timeout %0d ns for cmd uid = %0d", timeout, uid)) 
 endtask

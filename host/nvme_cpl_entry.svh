@@ -1,9 +1,11 @@
 class nvme_cpl_entry extends uvm_object;
 
-  `uvm_object_utils_begin(nvme_cpl_entry)
-  `uvm_object_utils_end
-
        U32     CQE_DW[];
+       int     fid = -1;
+
+  `uvm_object_utils_begin(nvme_cpl_entry)
+    `uvm_field_int      (fid, UVM_ALL_ON)
+  `uvm_object_utils_end
 
   extern function            new(string name="nvme_cpl_entry");
   extern function U16        get_sqid();

@@ -204,7 +204,7 @@ task esp_host::pbs_admin_create_sq(nvme_cmd cmd);
   mgrs[fid].CQ[cqid].add_sq(sq);
   
   if(pc)begin
-    mem_mgr.malloc(qsize, addr, suc);
+    mem_mgr.seq_malloc(qsize, addr, suc);
     if(suc)begin
       sq.set_base_addr(addr);
       cmd.sprp1 = addr; 
@@ -216,7 +216,7 @@ task esp_host::pbs_admin_create_sq(nvme_cmd cmd);
   else begin
     remain_size = qsize + 1;
     if(remain_size <= page_sz)begin
-      mem_mgr.malloc(remain_size, addr, suc);
+      mem_mgr.seq_malloc(remain_size, addr, suc);
       if(suc)begin
         sq.set_base_addr(addr);
         cmd.sprp1 = addr;
@@ -229,7 +229,7 @@ task esp_host::pbs_admin_create_sq(nvme_cmd cmd);
         prplist_h = new();
         //Last prp list
         if(remain_size <= page_sz/8*page_sz)begin
-          mem_mgr.malloc(page_sz, addr, suc);
+          mem_mgr.seq_malloc(page_sz, addr, suc);
           if(suc)
 	    prplist_h.base_addr = addr;
 	  else
@@ -237,7 +237,7 @@ task esp_host::pbs_admin_create_sq(nvme_cmd cmd);
           
 	  num_page_need = remain_size/page_sz + (remain_size%page_sz > 0 ? 1 : 0);
 	  for(int i = 0; i < num_page_need; i++)begin
-            mem_mgr.malloc(page_sz, addr, suc);
+            mem_mgr.seq_malloc(page_sz, addr, suc);
             if(suc)
 	      prplist_h.prps.push_back(addr);
 	    else
@@ -248,7 +248,7 @@ task esp_host::pbs_admin_create_sq(nvme_cmd cmd);
 	end
 	//Not last prp list
 	else begin
-          mem_mgr.malloc(page_sz, addr, suc);
+          mem_mgr.seq_malloc(page_sz, addr, suc);
 	  if(suc)
 	    prplist_h.base_addr = addr;
 	  else
@@ -256,7 +256,7 @@ task esp_host::pbs_admin_create_sq(nvme_cmd cmd);
           
 	  num_page_need = page_sz/8 - 1;
 	  for(int i = 0; i < num_page_need; i++)begin
-            mem_mgr.malloc(page_sz, addr, suc);
+            mem_mgr.seq_malloc(page_sz, addr, suc);
             if(suc)
 	      prplist_h.prps.push_back(addr);
 	    else
@@ -316,7 +316,7 @@ task esp_host::pbs_admin_create_cq(nvme_cmd cmd);
   cq.set_num_entry(qsize+1);
   
   if(pc)begin
-    mem_mgr.malloc(qsize, addr, suc);
+    mem_mgr.seq_malloc(qsize, addr, suc);
     if(suc)begin
       cq.set_base_addr(addr);
       cmd.sprp1 = addr; 
@@ -328,7 +328,7 @@ task esp_host::pbs_admin_create_cq(nvme_cmd cmd);
   else begin
     remain_size = qsize + 1;
     if(remain_size <= page_sz)begin
-      mem_mgr.malloc(remain_size, addr, suc);
+      mem_mgr.seq_malloc(remain_size, addr, suc);
       if(suc)begin
         cq.set_base_addr(addr);
         cmd.sprp1 = addr;
@@ -341,7 +341,7 @@ task esp_host::pbs_admin_create_cq(nvme_cmd cmd);
         prplist_h = new();
 	//Last prp list
         if(remain_size <= page_sz/8*page_sz)begin
-	  mem_mgr.malloc(page_sz, addr, suc);
+	  mem_mgr.seq_malloc(page_sz, addr, suc);
 	  if(suc)
 	    prplist_h.base_addr = addr;
 	  else
@@ -349,7 +349,7 @@ task esp_host::pbs_admin_create_cq(nvme_cmd cmd);
           
 	  num_page_need = remain_size/page_sz + (remain_size%page_sz > 0 ? 1 : 0);
 	  for(int i = 0; i < num_page_need; i++)begin
-            mem_mgr.malloc(page_sz, addr, suc);
+            mem_mgr.seq_malloc(page_sz, addr, suc);
             if(suc)
 	      prplist_h.prps.push_back(addr);
 	    else
@@ -360,7 +360,7 @@ task esp_host::pbs_admin_create_cq(nvme_cmd cmd);
 	end
 	//Not last prp list
 	else begin
-          mem_mgr.malloc(page_sz, addr, suc);
+          mem_mgr.seq_malloc(page_sz, addr, suc);
 	  if(suc)
 	    prplist_h.base_addr = addr;
 	  else
@@ -368,7 +368,7 @@ task esp_host::pbs_admin_create_cq(nvme_cmd cmd);
           
 	  num_page_need = page_sz/8 - 1;
 	  for(int i = 0; i < num_page_need; i++)begin
-            mem_mgr.malloc(page_sz, addr, suc);
+            mem_mgr.seq_malloc(page_sz, addr, suc);
             if(suc)
 	      prplist_h.prps.push_back(addr);
 	    else
@@ -548,15 +548,21 @@ task esp_host::forever_monitor_interrupt();
         cq = mgrs[fid].CQ[cqid];
         cq_tail = get_cq_tail(cq);  //TODO check the phase bit in CQE
         cq_head = cq.get_head();   
-        while(cq_tail != cq_head) begin
+        while(cq_tail != cq.get_head()) begin
           nvme_cpl = nvme_cpl_entry::type_id::create("nvme_cpl");
           get_one_cqe(cq, nvme_cpl);
+          nvme_cpl.fid = fid;
           //suc = do_host_cpl_compare();
           suc  = 1;  //TODO
+          `uvm_info(get_name(), $sformatf("process unhandle_cqe_q"), UVM_LOW) 
           if(suc)begin
 	    unhandle_cqe_q.push_back(nvme_cpl);
           end
+          #100ns;
+          `uvm_info(get_name(), $sformatf("check cq tail = %0d head = %0d", cq_tail, cq.get_head()), UVM_LOW) 
         end
+        
+        `uvm_info(get_name(), $sformatf("check cq tail and head"), UVM_LOW) 
       end
       
         
@@ -633,11 +639,13 @@ endfunction
 
 task esp_host::process_cmd_when_completion(nvme_cpl_entry nvme_cpl);
   nvme_cmd    cmd;
-  int         sqid, cid, uid;
+  int         fid, sqid, cid, uid;
+  bit[14:0]   status;
 
   status = nvme_cpl.get_status();
   sqid   = nvme_cpl.get_sqid();
   cid    = nvme_cpl.get_cid();
+  fid    = nvme_cpl.fid;
 
   uid    = find_related_cmd(fid, sqid, cid);
   cmd = host_cmd_map[uid];
@@ -654,6 +662,7 @@ task esp_host::process_cmd_when_completion(nvme_cpl_entry nvme_cpl);
   endcase
   host_cmd_map[uid].state = CMD_DONE;
   `uvm_info(get_name(), $sformatf("CMD #%0h is finished", uid), UVM_NONE)
+  `uvm_info(get_name(), $sformatf("CMD #%0h state is %s", uid, host_cmd_map[uid].state.name()), UVM_LOW) 
 endtask
 
 
@@ -703,7 +712,7 @@ endtask
 
 
 task esp_host::pwc_admin_create_sq(int uid);
-  int fid, cqid;
+  int fid, sqid;
   
   fid  = host_cmd_map[uid].fid;
   sqid = host_cmd_map[uid].sdw10_adm.create_iosq.QID;

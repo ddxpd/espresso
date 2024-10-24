@@ -1,6 +1,6 @@
 class esp_host_mgr extends uvm_object;
 
-  `uvm_object_utils(esp_host_mgr)
+  
 
   int               fid;
   int               num_of_bar; 
@@ -9,7 +9,7 @@ class esp_host_mgr extends uvm_object;
 
   int               num_sq_support;
   int               num_cq_support; 
-  nvme_namespace    active_ns[U32];    // KEY is namespace id
+  nvme_namespace    active_ns[int];    // KEY is namespace id
   nvme_msix_vector  msix_vector[int];  // KEY is IV id
 
   esp_host_sq       SQ[int];           // KEY is sqid
@@ -43,6 +43,11 @@ class esp_host_mgr extends uvm_object;
   S_PMRSWTP         pmrswtp;
   S_PMRMSCL         pmrmscl;
   S_PMRMSCU         pmrmscu;
+
+  `uvm_object_utils_begin(esp_host_mgr)
+    `uvm_field_int      (fid, UVM_ALL_ON)
+  `uvm_object_utils_end
+
 
   extern function      new(string name="esp_host_mgr");
   extern function void register_cq(esp_host_cq cq);

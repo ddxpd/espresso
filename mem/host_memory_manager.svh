@@ -1,11 +1,5 @@
 class mem_slice extends uvm_object;
   
-
-  typedef enum U8 {
-    CMD_IDLE        = 'h0,
-    CMD_UNFINISH    = 'h2
-  } MALLOC_MODE_E;
-
   static int    slice_cnt;  //1 based
   int           slice_id;
   
@@ -14,8 +8,6 @@ class mem_slice extends uvm_object;
   U64           size;
   bit           in_use;
   bit           exclusive;
-
-  
 
   `uvm_object_utils(mem_slice)
   
@@ -43,8 +35,9 @@ class host_memory_manager extends uvm_component;
   
 
   typedef enum U8 {
-    CMD_IDLE        = 'h0,
-    CMD_UNFINISH    = 'h2
+    MALLOC_MIX     = 'h0,
+    MALLOC_SEQ     = 'h1,
+    MALLOC_RAND    = 'h2
   } MALLOC_MODE_E;
   
   host_memory    host_mem;
@@ -56,7 +49,7 @@ class host_memory_manager extends uvm_component;
 
   extern function       new(string name, uvm_component parent);
   extern function void  init();
-  extern task           malloc(input int req_size, output U64 addr, output bit suc, input int timeout = 10000);   //TODO page unaligned
+  extern task           malloc(input int req_size, output U64 addr, output bit suc, input MALLOC_MODE_E malloc_mode = MALLOC_SEQ, input int timeout = 10000);   //TODO page unaligned
   extern task           rand_malloc(input int req_size, output U64 addr, output bit suc, input int timeout = 10000);   //TODO page unaligned
   extern task           seq_malloc(input int req_size, output U64 addr, output bit suc, input int timeout = 10000);   //TODO page unaligned
   extern task           free(U64 addr);  
@@ -96,16 +89,22 @@ function void host_memory_manager::init();
     curr_addr += unit_size;
   end while(curr_addr < mem_end_addr);
 
-  foreach(slice[i])begin
-    $display("mem slice %0d start addr = %0h, end addr = %0h", 
-              slice[i].slice_id, slice[i].start_addr, slice[i].end_addr); 
-  end
+  //foreach(slice[i])begin
+  //  $display("mem slice %0d start addr = %0h, end addr = %0h", 
+  //            slice[i].slice_id, slice[i].start_addr, slice[i].end_addr); 
+  //end
   
 endfunction
 
 
 
-task host_memory_manager::malloc(input int req_size, output U64 addr, output bit suc, input malloc_mode, input int timeout = 10000);
+task host_memory_manager::malloc(input int req_size, output U64 addr, output bit suc, input MALLOC_MODE_E malloc_mode = MALLOC_SEQ, input int timeout = 10000);
+  
+endtask
+
+
+
+task host_memory_manager::rand_malloc(input int req_size, output U64 addr, output bit suc, input int timeout = 10000);
   
 endtask
 
